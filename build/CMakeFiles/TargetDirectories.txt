@@ -1,0 +1,3 @@
+/workspaces/TransferStation/1_Projects/Current/Alliance-radar-dev/build/CMakeFiles/yolov5_cpp.dir
+/workspaces/TransferStation/1_Projects/Current/Alliance-radar-dev/build/CMakeFiles/edit_cache.dir
+/workspaces/TransferStation/1_Projects/Current/Alliance-radar-dev/build/CMakeFiles/rebuild_cache.dir

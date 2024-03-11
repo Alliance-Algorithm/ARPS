@@ -1,0 +1,10 @@
+/workspaces/TransferStation/1_Projects/Current/Alliance-radar-dev/car_detect/build/car_detect/CMakeFiles/uninstall.dir
+/workspaces/TransferStation/1_Projects/Current/Alliance-radar-dev/car_detect/build/car_detect/CMakeFiles/car_detect_uninstall.dir
+/workspaces/TransferStation/1_Projects/Current/Alliance-radar-dev/car_detect/build/car_detect/CMakeFiles/car_detect.dir
+/workspaces/TransferStation/1_Projects/Current/Alliance-radar-dev/car_detect/build/car_detect/CMakeFiles/test.dir
+/workspaces/TransferStation/1_Projects/Current/Alliance-radar-dev/car_detect/build/car_detect/CMakeFiles/edit_cache.dir
+/workspaces/TransferStation/1_Projects/Current/Alliance-radar-dev/car_detect/build/car_detect/CMakeFiles/rebuild_cache.dir
+/workspaces/TransferStation/1_Projects/Current/Alliance-radar-dev/car_detect/build/car_detect/CMakeFiles/list_install_components.dir
+/workspaces/TransferStation/1_Projects/Current/Alliance-radar-dev/car_detect/build/car_detect/CMakeFiles/install.dir
+/workspaces/TransferStation/1_Projects/Current/Alliance-radar-dev/car_detect/build/car_detect/CMakeFiles/install/local.dir
+/workspaces/TransferStation/1_Projects/Current/Alliance-radar-dev/car_detect/build/car_detect/CMakeFiles/install/strip.dir

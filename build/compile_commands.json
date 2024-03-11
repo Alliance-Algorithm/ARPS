@@ -1,0 +1,7 @@
+[
+{
+  "directory": "/workspaces/TransferStation/1_Projects/Current/Alliance-radar-dev/build",
+  "command": "/usr/bin/g++  -isystem /usr/include/opencv4 -g -std=gnu++17 -o CMakeFiles/yolov5_cpp.dir/Yolov5.cpp.o -c /workspaces/TransferStation/1_Projects/Current/Alliance-radar-dev/Yolov5_cpp_test/Yolov5.cpp",
+  "file": "/workspaces/TransferStation/1_Projects/Current/Alliance-radar-dev/Yolov5_cpp_test/Yolov5.cpp"
+}
+]

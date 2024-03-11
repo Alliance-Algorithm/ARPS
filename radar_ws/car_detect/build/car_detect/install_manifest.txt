@@ -1,0 +1,16 @@
+/workspaces/TransferStation/1_Projects/Current/Alliance-radar-dev/car_detect/install/car_detect/share/ament_index/resource_index/package_run_dependencies/car_detect
+/workspaces/TransferStation/1_Projects/Current/Alliance-radar-dev/car_detect/install/car_detect/share/ament_index/resource_index/parent_prefix_path/car_detect
+/workspaces/TransferStation/1_Projects/Current/Alliance-radar-dev/car_detect/install/car_detect/share/car_detect/environment/ament_prefix_path.sh
+/workspaces/TransferStation/1_Projects/Current/Alliance-radar-dev/car_detect/install/car_detect/share/car_detect/environment/ament_prefix_path.dsv
+/workspaces/TransferStation/1_Projects/Current/Alliance-radar-dev/car_detect/install/car_detect/share/car_detect/environment/path.sh
+/workspaces/TransferStation/1_Projects/Current/Alliance-radar-dev/car_detect/install/car_detect/share/car_detect/environment/path.dsv
+/workspaces/TransferStation/1_Projects/Current/Alliance-radar-dev/car_detect/install/car_detect/share/car_detect/local_setup.bash
+/workspaces/TransferStation/1_Projects/Current/Alliance-radar-dev/car_detect/install/car_detect/share/car_detect/local_setup.sh
+/workspaces/TransferStation/1_Projects/Current/Alliance-radar-dev/car_detect/install/car_detect/share/car_detect/local_setup.zsh
+/workspaces/TransferStation/1_Projects/Current/Alliance-radar-dev/car_detect/install/car_detect/share/car_detect/local_setup.dsv
+/workspaces/TransferStation/1_Projects/Current/Alliance-radar-dev/car_detect/install/car_detect/share/car_detect/package.dsv
+/workspaces/TransferStation/1_Projects/Current/Alliance-radar-dev/car_detect/install/car_detect/share/ament_index/resource_index/packages/car_detect
+/workspaces/TransferStation/1_Projects/Current/Alliance-radar-dev/car_detect/install/car_detect/share/car_detect/cmake/car_detectConfig.cmake
+/workspaces/TransferStation/1_Projects/Current/Alliance-radar-dev/car_detect/install/car_detect/share/car_detect/cmake/car_detectConfig-version.cmake
+/workspaces/TransferStation/1_Projects/Current/Alliance-radar-dev/car_detect/install/car_detect/share/car_detect/package.xml
+/workspaces/TransferStation/1_Projects/Current/Alliance-radar-dev/car_detect/install/car_detect/lib/car_detect/car_detect
