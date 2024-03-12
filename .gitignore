@@ -13,3 +13,4 @@ install
 build
 *.mp4
 *.log
+log
