@@ -78,8 +78,6 @@ uint8_t CRC8_Check(const uint8_t *data, uint8_t len)
  */
 void serial_data_pack(uint8_t *serial_data, map_robot_data_t emeny_robot_positions, int req)
 {
-    // 串口数据
-    uint8_t serial_data[19];
     // 帧头
     uint8_t frame_header[] = {0xA5, 0x0A >> 8, 0x0A, (uint8_t)req}; // SOF, 数据长度高8位, 数据长度低8位, 包序号
     uint8_t len = sizeof(frame_header) / sizeof(frame_header[0]);   // 帧头长度
@@ -91,8 +89,8 @@ void serial_data_pack(uint8_t *serial_data, map_robot_data_t emeny_robot_positio
     serial_data[2] = frame_header[2];
     serial_data[3] = frame_header[3];
     serial_data[4] = frame_header[4];
-    serial_data[5] = 0x0305 >> 8; // cmd id高8位
-    serial_data[6] = 0x0305;      // cmd id低8位
+    serial_data[5] = 0x0305 >> 8;   // cmd id高8位
+    serial_data[6] = 0x0305 & 0xFF; // cmd id低8位
 
     // 打包数据
     serial_data[7] = emeny_robot_positions.target_robot_id >> 8;
@@ -115,6 +113,7 @@ void serial_data_pack(uint8_t *serial_data, map_robot_data_t emeny_robot_positio
 // 串口发送数据
 int main()
 {
+    // 串口初始化
     serial::Serial radar_serial = serial::Serial("/dev/ttyUSB0",
                                                  115200U,
                                                  serial::Timeout(),
@@ -122,20 +121,28 @@ int main()
                                                  serial::parity_none,
                                                  serial::stopbits_one,
                                                  serial::flowcontrol_none);
-    map_robot_data_t emeny_robot_positions;
-    uint8_t serial_data[19];
-    emeny_robot_positions.target_position_x = 11.0;
-    emeny_robot_positions.target_position_y = 22.0;
-    emeny_robot_positions.target_robot_id = 7;
 
-    serial_data_pack(serial_data, emeny_robot_positions, 1);
-    int count = 1;
-    while (true)
+    std::vector<map_robot_data_t> emeny_robot_positions;
+
+    // 机器人位置信息
+    map_robot_data_t emeny_robot_position;
+    emeny_robot_position.target_position_x = 11.0;
+    emeny_robot_position.target_position_y = 22.0;
+    emeny_robot_position.target_robot_id = 7;
+
+    emeny_robot_positions.push_back(emeny_robot_position);
+
+    for (size_t i = 0; i < emeny_robot_positions.size(); i++)
     {
-        radar_serial.write(serial_data, sizeof(serial_data));
-        std::cout << count++ << " Send radar data" << std::endl;
-        sleep(1);
-    }
 
-    return 0;
+        // 串口数据打包
+        uint8_t serial_data[19];
+        serial_data_pack(serial_data, emeny_robot_positions[i], i);
+
+        // 串口数据发送
+        radar_serial.write(serial_data, sizeof(serial_data));
+        std::cout << "Radar data sent:" << serial_data << std::endl;
+
+        return 0;
+    }
 }
