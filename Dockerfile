@@ -15,6 +15,11 @@ RUN pip install -r ./requirements.txt && \
     rm -f ./requirements.txt
 
 # install oh my zsh & change theme to af-magic
-RUN apt-get update && apt-get -y install zsh \
-    sh -c "$(wget https://gitee.com/mirrors/oh-my-zsh/raw/master/tools/install.sh -O -)" && \
-    sed -i 's/ZSH_THEME=\"[a-z0-9\-]*\"/ZSH_THEME="af-magic"/g' ~/.zshrc
+RUN apt-get update && apt-get -y install zsh 
+RUN wget https://gitee.com/mirrors/oh-my-zsh/raw/master/tools/install.sh -O zsh-install.sh && \
+    chmod +x ./zsh-install.sh && ./zsh-install.sh && \
+    sed -i 's/ZSH_THEME=\"[a-z0-9\-]*\"/ZSH_THEME="af-magic"/g' ~/.zshrc && \
+    rm ./zsh-install.sh 
+
+
+RUN chsh root -s /bin/zsh
