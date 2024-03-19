@@ -1,7 +1,13 @@
+/*
+ *@email lisiyao20041017@gmail.com
+ *最后更新时间:2024/3/19 22p.m.
+ *更新人:算法组-Lisiyao
+ *更新内容:添加了日志系统
+ */
 #include <iostream>
 #include <serial/serial.h>
 #include <unistd.h>
-
+#include "Logger.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/float32_multi_array.hpp"
 
@@ -19,6 +25,8 @@ using map_robot_data_t = struct
     uint32_t target_position_y;
 };
 
+Logger logger(Logger::file, Logger::debug, "/workspaces/Alliance-radar/radar_ws/user_logs/serial.log");
+
 // 串口初始化
 serial::Serial radar_serial = serial::Serial("/dev/ttyUSB0",
                                              115200U,
@@ -27,7 +35,6 @@ serial::Serial radar_serial = serial::Serial("/dev/ttyUSB0",
                                              serial::parity_none,
                                              serial::stopbits_one,
                                              serial::flowcontrol_none);
-
 /*
  * CRC16校验
  * @param data 数据
@@ -142,6 +149,7 @@ private:
     {
         try
         {
+            logger.INFO("-->Received data from car_detect | size:" + std::to_string(msg->data.size()));
             // 串口数据初始化容器
             std::vector<map_robot_data_t> emeny_robot_positions;
 
@@ -169,11 +177,11 @@ private:
                 // 串口数据发送
                 radar_serial.write(serial_data, sizeof(serial_data));
             }
+            logger.INFO("Send data to radar_serial | size:" + std::to_string(emeny_robot_positions.size()));
         }
         catch (const std::exception &e)
         {
-            std::cout << "\033[31m[ERROR]\033[0m";
-            std::cerr << e.what() << '\n';
+            logger.ERRORS("[x]Error in command_callback: " + std::string(e.what()));
         }
     }
 };
@@ -181,13 +189,25 @@ private:
 // 串口发送数据
 int main(int argc, char **argv)
 {
-    rclcpp::init(argc, argv);
 
-    // [创建对应节点的共享指针对象]
-    auto positions_subscriber = std::make_shared<PositionsSubscriber>("positions_subscriber");
+    try
+    {
+        // 初始化节点
+        logger.INFO("Initializing node...");
+        rclcpp::init(argc, argv);
 
-    // [运行节点，并检测退出信号]
-    rclcpp::spin(positions_subscriber);
-    rclcpp::shutdown();
+        // [创建对应节点的共享指针对象]
+        auto positions_subscriber = std::make_shared<PositionsSubscriber>("positions_subscriber");
+        logger.INFO("[√]Node initialized.");
+
+        // [运行节点，并检测退出信号]
+        rclcpp::spin(positions_subscriber);
+        rclcpp::shutdown();
+    }
+    catch (const std::exception &e)
+    {
+        logger.ERRORS("[x]Error in command_callback: " + std::string(e.what()));
+    }
+
     return 0;
 }

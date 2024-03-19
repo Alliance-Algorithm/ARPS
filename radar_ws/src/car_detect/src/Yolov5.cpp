@@ -1,3 +1,9 @@
+/*
+ *@email lisiyao20041017@gmail.com
+ *最后更新时间:2024/3/19 22p.m.
+ *更新人:算法组-Lisiyao
+ *更新内容:添加了日志系统
+ */
 #include <opencv2/opencv.hpp>
 #include <string>
 #include <math.h>
@@ -8,6 +14,12 @@
 #include <vector>
 #include <time.h>
 
+Logger logger(Logger::file, Logger::debug, "/workspaces/Alliance-radar/radar_ws/user_logs/detect.log");
+
+/*
+ * 检测结果
+ * 机器人ID, x坐标, y坐标
+ */
 struct DetectResult
 {
 	int classId;
@@ -15,6 +27,14 @@ struct DetectResult
 	cv::Rect box;
 };
 
+/*
+ * YOLOv5检测器
+ *
+ * @param onnxpath 模型路径
+ * @param iw 输入宽度
+ * @param ih 输入高度
+ * @param threshold 阈值
+ */
 class YOLOv5Detector
 {
 public:
@@ -36,6 +56,12 @@ void YOLOv5Detector::load_model(std::string onnxpath, int iw, int ih, float thre
 	this->net = cv::dnn::readNetFromONNX(onnxpath);
 }
 
+/*
+ * 检测
+ *
+ * @param frame 输入图像
+ * @param results 检测结果
+ */
 void YOLOv5Detector::detect(cv::Mat &frame, std::vector<DetectResult> &results)
 {
 	// 图象预处理 - 格式化操作
@@ -125,11 +151,25 @@ void YOLOv5Detector::detect(cv::Mat &frame, std::vector<DetectResult> &results)
 	std::vector<double> layersTimings;
 	double freq = cv::getTickFrequency() / 1000.0;
 	double time = net.getPerfProfile(layersTimings) / freq;
+
+	logger.INFO("-->Detecting result size:" + std::to_string(results.size()));
+	logger.INFO("FPS: " + std::to_string(float(int((1000 / time) * 10)) / 10) + " | time : " + std::to_string(time) + " ms");
 	ss << "FPS: " << float(int((1000 / time) * 10)) / 10 << " | time : " << time << " ms";
 	putText(frame, ss.str(), cv::Point(20, 80), cv::FONT_HERSHEY_PLAIN, 5.0, cv::Scalar(255, 255, 0), 5, 8);
 }
 
-// [ROS2 数据收发类]>
+/*
+ * 数据发布类
+ * 发布检测结果
+ * @param name 节点名称
+ * @param topic 话题名称
+ * @param qos 服务质量
+ * @param message 消息
+ * @param publisher 发布者
+ * @param publish 发布消息
+ * @param publisher_ 发布者指针
+ * @param Points_publisher 节点指针
+ */
 class Points_publisher : public rclcpp::Node
 {
 public:
@@ -149,73 +189,96 @@ public:
 private:
 	rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr publisher_;
 };
-// [ROS2 数据收发类]<
 
 int main(int argc, char **argv)
 {
-	Logger logger(Logger::file, Logger::debug, "./logs/yolo.log");
-
-	rclcpp::init(argc, argv);
-	//[创建对应节点的共享指针对象]
-	auto publisher = std::make_shared<Points_publisher>("detect_result");
-	//[运行节点，并检测退出信号]
-
-	std_msgs::msg::Float32MultiArray message;
-	std::string classNames[1] = {"Car"};
-
-	std::shared_ptr<YOLOv5Detector> detector(new YOLOv5Detector());
-
-	auto capture = cv::VideoCapture();
-
-	detector->load_model("./resources/car_identfy.onnx", 640, 640, 0.25f);
-	capture.open("./resources/2.mp4");
-
-	if (!capture.isOpened())
+	try
 	{
-		logger.ERRORS("视频或摄像头打开失败");
+		// [创建日志对象]
+
+		logger.INFO("ROS2Message node starting...");
+		// [初始化ROS2节点]
+		rclcpp::init(argc, argv);
+		//[创建对应节点的共享指针对象]
+		auto publisher = std::make_shared<Points_publisher>("detect_result");
+		//[运行节点，并检测退出信号]
+		logger.INFO("[√]successfully started.");
+		std_msgs::msg::Float32MultiArray message;
+		std::string classNames[1] = {"Car"};
+
+		// [创建YOLOv5检测器]
+		logger.INFO("YOLOv5Detector starting...");
+		std::shared_ptr<YOLOv5Detector> detector(new YOLOv5Detector());
+		logger.INFO("[√]successfully started.");
+
+		// [创建视频流]
+		auto capture = cv::VideoCapture();
+
+		logger.INFO("Loading model...");
+		// [加载模型]
+		detector->load_model("./resources/car_identfy.onnx", 640, 640, 0.25f);
+		logger.INFO("[√]Model loaded.");
+		logger.INFO("Opening video stream...");
+		// capture.open(0);
+		capture.open("./resources/2.mp4");
+		logger.INFO("[√]Video stream opened.");
+
+		if (!capture.isOpened())
+		{
+			logger.ERRORS("[x]视频或摄像头打开失败");
+		}
+
+		// [创建图像容器]
+		cv::Mat frame;
+		std::vector<DetectResult> results;
+		std::vector<float> detect_result;
+
+		cv::namedWindow("detect_window", 0);
+		cv::resizeWindow("detect_window", cv::Size(960, 540));
+		// cv::namedWindow("car_images", 0);
+		// cv::resizeWindow("car_images", cv::Size(100, 100));
+
+		logger.INFO("Start detecting...");
+		// [循环处理视频流]
+		while (true)
+		{
+			bool ret = capture.read(frame);
+			if (!ret)
+				break;
+			detector->detect(frame, results);
+
+			detect_result.clear();
+
+			for (size_t i = 0; i < results.size(); i++)
+			{
+				detect_result.push_back(results[i].classId);
+				detect_result.push_back(results[i].box.x);
+				detect_result.push_back(results[i].box.y);
+			}
+			message.data = detect_result;
+			publisher->publish(message);
+			for (DetectResult dr : results)
+			{
+				std::ostringstream info;
+				info << classNames[dr.classId] << " Conf:" << float(int(dr.score * 100)) / 100;
+				cv::Rect box = dr.box;
+				cv::putText(frame, info.str(), cv::Point(box.tl().x, box.tl().y - 10), cv::FONT_HERSHEY_SIMPLEX, 2, cv::Scalar(0, 0, 255), 3);
+			}
+
+			cv::imshow("detect_window", frame);
+			char c = cv::waitKey(1);
+			if (c == 27)
+			{ // ESC 退出
+				break;
+			}
+			// reset for next frame
+			results.clear();
+		}
+		rclcpp::spin(publisher);
+		rclcpp::shutdown();
 	}
-
-	cv::Mat frame;
-	std::vector<DetectResult> results;
-	std::vector<float> detect_result;
-
-	cv::namedWindow("detect_window", 0);
-	cv::resizeWindow("detect_window", cv::Size(960, 540));
-	// cv::namedWindow("car_images", 0);
-	// cv::resizeWindow("car_images", cv::Size(100, 100));
-	while (true)
+	catch (const std::exception &e)
 	{
-		bool ret = capture.read(frame);
-		if (!ret)
-			break;
-		detector->detect(frame, results);
-		detect_result.clear();
-
-		for (size_t i = 0; i < results.size(); i++)
-		{
-			detect_result.push_back(results[i].classId);
-			detect_result.push_back(results[i].box.x);
-			detect_result.push_back(results[i].box.y);
-		}
-		message.data = detect_result;
-		publisher->publish(message);
-		for (DetectResult dr : results)
-		{
-			std::ostringstream info;
-			info << classNames[dr.classId] << " Conf:" << float(int(dr.score * 100)) / 100;
-			cv::Rect box = dr.box;
-			cv::putText(frame, info.str(), cv::Point(box.tl().x, box.tl().y - 10), cv::FONT_HERSHEY_SIMPLEX, 2, cv::Scalar(0, 0, 255), 3);
-		}
-
-		cv::imshow("detect_window", frame);
-		char c = cv::waitKey(1);
-		if (c == 27)
-		{ // ESC 退出
-			break;
-		}
-		// reset for next frame
-		results.clear();
+		logger.ERRORS("[x]Error in command_callback: " + std::string(e.what()));
 	}
-	rclcpp::spin(publisher);
-	rclcpp::shutdown();
 }
