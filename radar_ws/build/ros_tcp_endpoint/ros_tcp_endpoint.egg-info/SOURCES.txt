@@ -1,5 +1,3 @@
-LICENSE
-README.md
 package.xml
 setup.cfg
 setup.py
@@ -24,6 +22,10 @@ ros_tcp_endpoint/subscriber.py
 ros_tcp_endpoint/tcp_sender.py
 ros_tcp_endpoint/thread_pauser.py
 ros_tcp_endpoint/unity_service.py
-test/test_copyright.py
-test/test_flake8.py
-test/test_pep257.py
+ros_tcp_endpoint.egg-info/PKG-INFO
+ros_tcp_endpoint.egg-info/SOURCES.txt
+ros_tcp_endpoint.egg-info/dependency_links.txt
+ros_tcp_endpoint.egg-info/entry_points.txt
+ros_tcp_endpoint.egg-info/requires.txt
+ros_tcp_endpoint.egg-info/top_level.txt
+ros_tcp_endpoint.egg-info/zip-safe

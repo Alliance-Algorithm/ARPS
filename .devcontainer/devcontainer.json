@@ -16,7 +16,6 @@
             "type": "bind"
         }
     ],
-    "postCreateCommand": "mkdir -p /tmp/devcontainercli-$USER && touch /tmp/devcontainercli-$USER/control-manifest.json",
     "containerEnv": {
         "DISPLAY": ":1"
     },

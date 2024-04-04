@@ -14,7 +14,7 @@
 #include <vector>
 #include <time.h>
 
-Logger logger(Logger::file, Logger::debug, "/workspaces/Alliance-radar/radar_ws/user_logs/detect.log");
+Logger logger(Logger::file, Logger::debug, "./user_logs/detect.log");
 
 /*
  * 检测结果

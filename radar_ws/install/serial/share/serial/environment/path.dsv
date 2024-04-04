@@ -1,1 +1,1 @@
-prepend-non-duplicate-if-exists;PATH;bin
+/workspaces/Alliance-radar/radar_ws/build/serial/ament_cmake_environment_hooks/path.dsv
