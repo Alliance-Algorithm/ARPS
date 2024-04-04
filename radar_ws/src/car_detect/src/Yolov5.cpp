@@ -9,6 +9,7 @@
 #include "std_msgs/msg/float32_multi_array.hpp"
 #include <iostream>
 #include <math.h>
+#include <memory>
 #include <opencv2/opencv.hpp>
 #include <string>
 #include <time.h>
@@ -38,6 +39,8 @@ class YOLOv5Detector {
 public:
   void load_model(std::string onnxpath, int iw, int ih, float threshold);
   void detect(cv::Mat &frame, std::vector<DetectResult> &result);
+  void detect(cv::Mat &frame, std::vector<DetectResult> &result,
+              std::shared_ptr<YOLOv5Detector> detector);
 
 private:
   int input_w = 640;
@@ -55,7 +58,7 @@ void YOLOv5Detector::load_model(std::string onnxpath, int iw, int ih,
 }
 
 /*
- * 检测
+ * 普通检测
  *
  * @param frame 输入图像
  * @param results 检测结果
@@ -114,14 +117,6 @@ void YOLOv5Detector::detect(cv::Mat &frame,
       box.width = width;
       box.height = height;
 
-      if (x > 0 && y > 0 && width > 0 && height > 0 &&
-          x + width <= frame.cols && y + height <= frame.rows) {
-        cv::Mat car_image = frame(cv::Rect(x, y, width, height));
-        // cv::imshow("car_images", car_image);
-        // cv::waitKey(1);
-        car_images.push_back(car_image);
-      }
-
       boxes.push_back(box);
       classIds.push_back(classIdPoint.x);
       confidences.push_back(score);
@@ -141,6 +136,141 @@ void YOLOv5Detector::detect(cv::Mat &frame,
     cv::rectangle(frame, boxes[index], cv::Scalar(0, 0, 255), 2, 8);
     // cv::rectangle(frame, cv::Point(boxes[index].tl().x, boxes[index].tl().y -
     // 20), 			  cv::Point(boxes[index].br().x,
+    // boxes[index].tl().y), cv::Scalar(0, 0, 255), -1);
+    results.push_back(dr);
+  }
+
+  std::ostringstream ss;
+  std::vector<double> layersTimings;
+  double freq = cv::getTickFrequency() / 1000.0;
+  double time = net.getPerfProfile(layersTimings) / freq;
+
+  logger.INFO("-->Detecting result size:" + std::to_string(results.size()));
+  logger.INFO("FPS: " + std::to_string(float(int((1000 / time) * 10)) / 10) +
+              " | time : " + std::to_string(time) + " ms");
+  ss << "FPS: " << float(int((1000 / time) * 10)) / 10 << " | time : " << time
+     << " ms";
+  putText(frame, ss.str(), cv::Point(20, 80), cv::FONT_HERSHEY_PLAIN, 5.0,
+          cv::Scalar(255, 255, 0), 5, 8);
+}
+
+/*
+ * 嵌套检测
+ *
+ * @param frame 输入图像
+ * @param results 检测结果
+ * @param armor_detector 装甲板检测器
+ */
+void YOLOv5Detector::detect(cv::Mat &frame, std::vector<DetectResult> &results,
+                            std::shared_ptr<YOLOv5Detector> armor_detector) {
+  // 图象预处理 - 格式化操作
+  int w = frame.cols;
+  int h = frame.rows;
+  int _max = std::max(h, w);
+  cv::Mat image = cv::Mat::zeros(cv::Size(_max, _max), CV_8UC3);
+  cv::Rect roi(0, 0, w, h);
+  frame.copyTo(image(roi));
+
+  float x_factor = image.cols / 640.0f;
+  float y_factor = image.rows / 640.0f;
+
+  // 推理
+  cv::Mat blob = cv::dnn::blobFromImage(image, 1 / 255.0,
+                                        cv::Size(this->input_w, this->input_h),
+                                        cv::Scalar(0, 0, 0), true, false);
+  this->net.setInput(blob);
+  cv::Mat preds = this->net.forward();
+
+  // 后处理, 1x25200x85
+  // std::cout << "rows: " << preds.size[1] << " data: " << preds.size[2] <<
+  // std::endl;
+  cv::Mat det_output(preds.size[1], preds.size[2], CV_32F, preds.ptr<float>());
+  std::vector<cv::Rect> boxes;
+  std::vector<int> classIds;
+  std::vector<float> confidences;
+  std::vector<DetectResult> armor_results;
+  for (int i = 0; i < det_output.rows; i++) {
+    float confidence = det_output.at<float>(i, 4);
+    if (confidence < 0.45) {
+      continue;
+    }
+    // cv::Mat classes_scores = det_output.row(i).colRange(5, 85);
+
+    double score = confidence;
+    // minMaxLoc(classes_scores, 0, &score, 0, &classIdPoint);
+
+    if (score > this->threshold_score) {
+      float cx = det_output.at<float>(i, 0);
+      float cy = det_output.at<float>(i, 1);
+      float ow = det_output.at<float>(i, 2);
+      float oh = det_output.at<float>(i, 3);
+      int x = static_cast<int>((cx - 0.5 * ow) * x_factor);
+      int y = static_cast<int>((cy - 0.5 * oh) * y_factor);
+      int width = static_cast<int>(ow * x_factor);
+      int height = static_cast<int>(oh * y_factor);
+      cv::Rect box;
+      box.x = x;
+      box.y = y;
+      box.width = width;
+      box.height = height;
+
+      if (x > 0 && y > 0 && width > 0 && height > 0 &&
+          x + width <= frame.cols && y + height <= frame.rows) {
+        cv::Mat car_image = frame(cv::Rect(x, y, width, height));
+        armor_detector->detect(car_image, armor_results);
+
+        // Calculate the sum of scores for armor_results with the same classId
+        std::map<int, float> armor_id_scores;
+        for (const auto &result : armor_results) {
+          int classId = result.classId;
+          float score = result.score;
+          if (armor_id_scores.find(classId) == armor_id_scores.end()) {
+            armor_id_scores[classId] = score;
+          } else {
+            armor_id_scores[classId] += score;
+          }
+        }
+
+        // Find the highest score among the armor_results
+        int highestClassId = -1;
+        float highestScore = 0.0f;
+        for (const auto &pair : armor_id_scores) {
+          int classId = pair.first;
+          float score = pair.second;
+          if (score > highestScore) {
+            highestClassId = classId;
+            highestScore = score;
+          }
+        }
+        armor_results.clear();
+
+        classIds.push_back(highestClassId);
+        boxes.push_back(box);
+        confidences.push_back(score);
+      } else {
+        boxes.push_back(box);
+        classIds.push_back(404);
+        confidences.push_back(score);
+      }
+
+      // cv::imshow("car_images", car_image);
+      // cv::waitKey(1);
+    }
+  }
+
+  // NMS
+  std::vector<int> indexes;
+  cv::dnn::NMSBoxes(boxes, confidences, 0.25, 0.45, indexes);
+  for (size_t i = 0; i < indexes.size(); i++) {
+    DetectResult dr;
+    int index = indexes[i];
+    int idx = classIds[index];
+    dr.box = boxes[index];
+    dr.classId = idx;
+    dr.score = confidences[index];
+    cv::rectangle(frame, boxes[index], cv::Scalar(0, 0, 255), 2, 8);
+    // cv::rectangle(frame, cv::Point(boxes[index].tl().x, boxes[index].tl().y
+    // - 20), 			  cv::Point(boxes[index].br().x,
     // boxes[index].tl().y), cv::Scalar(0, 0, 255), -1);
     results.push_back(dr);
   }
@@ -200,21 +330,26 @@ int main(int argc, char **argv) {
     //[运行节点，并检测退出信号]
     logger.INFO("[√]successfully started.");
     std_msgs::msg::Float32MultiArray message;
-    std::string classNames[1] = {"Car"};
+    std::string car_classNames[1] = {"Car"};
 
     // [创建YOLOv5检测器]
     logger.INFO("YOLOv5Detector starting...");
-    std::shared_ptr<YOLOv5Detector> detector(new YOLOv5Detector());
-    logger.INFO("[√]successfully started.");
+    std::shared_ptr<YOLOv5Detector> car_detector(new YOLOv5Detector());
+    logger.INFO("[√]car_detector successfully started.");
+    std::shared_ptr<YOLOv5Detector> armor_detector(new YOLOv5Detector());
+    logger.INFO("[√]armor_detector successfully started.");
 
     // [创建视频流]
     auto capture = cv::VideoCapture();
 
     logger.INFO("Loading model...");
     // [加载模型]
-    detector->load_model("./resources/models/car_identfy.onnx", 640, 640,
-                         0.25f);
-    logger.INFO("[√]Model loaded.");
+    car_detector->load_model("./resources/models/car_identfy.onnx", 640, 640,
+                             0.25f);
+    logger.INFO("[√]car_detect model loaded.");
+    armor_detector->load_model("./resources/models/armor_identfy.onnx", 640,
+                               640, 0.25f);
+    logger.INFO("[√]armor_detect model loaded.");
     logger.INFO("Opening video stream...");
     // capture.open(0);
     capture.open("./resources/videos/2.mp4");
@@ -240,7 +375,7 @@ int main(int argc, char **argv) {
       bool ret = capture.read(frame);
       if (!ret)
         break;
-      detector->detect(frame, results);
+      car_detector->detect(frame, results);
 
       detect_result.clear();
 
@@ -253,7 +388,7 @@ int main(int argc, char **argv) {
       publisher->publish(message);
       for (DetectResult dr : results) {
         std::ostringstream info;
-        info << classNames[dr.classId]
+        info << car_classNames[dr.classId]
              << " Conf:" << float(int(dr.score * 100)) / 100;
         cv::Rect box = dr.box;
         cv::putText(frame, info.str(), cv::Point(box.tl().x, box.tl().y - 10),
