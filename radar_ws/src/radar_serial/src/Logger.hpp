@@ -58,7 +58,7 @@ Logger::Logger(log_target target, log_level level, const std::string &path)
     m_path = path;
     m_level = level;
 
-    std::string strContent = "---[开始日志 | 时间 "+ currTime() +" ]---\n";
+    std::string strContent = "[" + currTime() + "]" + "<开始日志>\n";
     if (target != terminal)
     {
         m_outfile.open(path, std::ios::out | std::ios::app); // 打开输出文件
@@ -72,7 +72,7 @@ Logger::Logger(log_target target, log_level level, const std::string &path)
 }
 Logger::~Logger()
 {
-    std::string strContent = "---[结束日志 | 时间 "+ currTime() +" ]---\n";
+    std::string strContent = "[" + currTime() + "]" + "<结束日志>\n";
     if (m_outfile.is_open())
     {
         m_outfile << strContent;
