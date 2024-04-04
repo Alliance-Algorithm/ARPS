@@ -1,3 +1,5 @@
+#! /bin/zsh
+
 git add .
 if [ $1 ]
 then 
