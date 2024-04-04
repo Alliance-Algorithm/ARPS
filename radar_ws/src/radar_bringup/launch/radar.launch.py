@@ -43,6 +43,15 @@ def generate_launch_description():
 
     ld.add_action(
         launch_ros.actions.Node(
+            package="ros_tcp_endpoint",
+            executable="default_server_endpoint",
+            respawn=True,
+            respawn_delay=2.0,
+        )
+    )
+
+    ld.add_action(
+        launch_ros.actions.Node(
             package="car_detect",
             executable="car_detect",
             respawn=True,
