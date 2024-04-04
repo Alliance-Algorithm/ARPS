@@ -1,7 +1,0 @@
-[submodule "radar_ws/src/ROS-TCP-Endpoint"]
-	path = radar_ws/src/ROS-TCP-Endpoint
-	url = https://github.com/Unity-Technologies/ROS-TCP-Endpoint.git
-	branch = main-ros2
-[submodule "radar_ws/src/ros2_serial"]
-	path = radar_ws/src/ros2_serial
-	url = https://github.com/Alliance-Algorithm/ros2-serial.git

@@ -1,1 +1,0 @@
-/workspaces/Alliance-radar/radar_ws/build/radar_serial/ament_cmake_environment_hooks/local_setup.sh
