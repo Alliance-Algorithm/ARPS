@@ -10,58 +10,52 @@
 
 ```
 .                   #根目录
-├── Dockerfile                   # Docker容器构建文件
-├── README.md                    # 项目说明文档
-└── radar_ws                     # ROS2工作空间
-    ├── build                    # 编译输出目录
-    ├── install                  # 安装输出目录
-    ├── launch.sh                # 启动脚本
-    ├── log                      # 日志目录
-    ├── rebuild.sh               # 重新构建脚本
-    ├── resources                # 资源文件夹
+├── Dockerfile               # Docker容器构建文件
+├── README.md                # 项目说明文档
+└── radar_ws                 # ROS2工作空间
+    ├── build                   # 编译输出目录
+    ├── install                 # 安装输出目录
+    ├── launch.sh               # 启动脚本
+    ├── log                     # 日志目录
+    ├── rebuild.sh              # 重新构建脚本
+    ├── resources               # 资源文件夹
     │   ├── models               # 模型文件夹
     │   │   ├── armor_identfy.onnx   # 装甲板识别模型
     │   │   └── car_identfy.onnx     # 车辆识别模型
     │   ├── user_logs            # 用户日志文件夹
-    │   │   ├── detect.log       # 车辆检测日志
-    │   │   └── serial.log       # 串口通信日志
+    │   │   ├── detect.log           # 车辆检测日志
+    │   │   └── serial.log           # 串口通信日志
     │   └── videos               # 视频文件夹
-    └── src                      # ROS2包源代码目录
-        ├── ROS_TCP_Endpoint     # ROS TCP终端节点
+    └── src             # ROS2包源代码目录
+        ├── ROS_TCP_Endpoint    # ROS TCP终端节点
         ├── car_detect          # 车辆检测节点
-        │   ├── CMakeLists.txt  # CMake构建配置文件
-        │   ├── package.xml     # 包描述文件
-        │   └── src             # 源代码目录
-        │       ├── Logger.hpp  # 日志工具头文件
-        │       └── Yolov5.cpp  # YOLOv5检测实现源文件
+        │   ├── CMakeLists.txt      # CMake构建配置文件
+        │   ├── package.xml         # 包描述文件
+        │   └── src                 # 源代码目录
+        │       ├── Logger.hpp      # 日志工具头文件
+        │       └── Yolov5.cpp      # YOLOv5检测实现源文件
         ├── radar_bringup       # 雷达启动节点
-        │   ├── CMakeLists.txt  # CMake构建配置文件
-        │   ├── launch          # 启动文件目录
-        │   │   └── radar.launch.py  # 雷达启动配置文件
-        │   └── package.xml     # 包描述文件
+        │   ├── CMakeLists.txt      # CMake构建配置文件
+        │   ├── launch              # 启动文件目录
+        │   │   └── radar.launch.py # 雷达启动配置文件
+        │   └── package.xml         # 包描述文件
         ├── radar_serial        # 串口通信节点
-        │   ├── CMakeLists.txt  # CMake构建配置文件
-        │   ├── package.xml     # 包描述文件
-        │   └── src             # 源代码目录
-        │       ├── Logger.hpp  # 日志工具头文件
+        │   ├── CMakeLists.txt      # CMake构建配置文件
+        │   ├── package.xml         # 包描述文件
+        │   └── src                 # 源代码目录
+        │       ├── Logger.hpp      # 日志工具头文件
         │       └── radar_serial.cpp  # 串口通信实现源文件
         ├── ros2_serial         # ROS2串口通信包
-        │   ├── CMakeLists.txt  # CMake构建配置文件
-        │   ├── LICENSE         # 许可证文件
-        │   ├── README.md       # 说明文档
-        │   ├── include         # 头文件目录
-        │   │   └── serial      # 串口库头文件目录
-        │   ├── package.xml     # 包描述文件
-        │   └── src             # 源代码目录
-        │       ├── impl        # 实现文件目录
-        │       └── serial.cc   # 串口通信实现源文件
-        └── unity_raycast       # Unity射线投影节点
-            └── debug           # 调试目录
-                ├── UnityPlayer.so     # Unity播放器库
-                ├── UnityPlayer_s.debug   # Unity播放器调试文件
-                ├── raycast.x86_64      # 射线投影可执行文件
-                ├── raycast_Data        # Unity射线投影数据文件夹
-                └── raycast_s.debug     # 射线投影调试文件
+        │   ├── CMakeLists.txt      # CMake构建配置文件
+        │   ├── LICENSE             # 许可证文件
+        │   ├── README.md           # 说明文档
+        │   ├── include             # 头文件目录
+        │   │   └── serial          # 串口库头文件目录
+        │   ├── package.xml         # 包描述文件
+        │   └── src                 # 源代码目录
+        │       ├── impl            # 实现文件目录
+        │       └── serial.cc       # 串口通信实现源文件
+        └── unity_raycast       # Unity节点
 
 ```
 
@@ -116,7 +110,7 @@ radar_serial节点的代码结构如下：
 
 ## 4. 部署方法
 
-克隆本项目，按照DockerFile构建镜像
+克隆本项目，按照DockerFile构建镜像后进入docker容器内
 
 运行脚本进行编译(约20s)
 ```zsh
