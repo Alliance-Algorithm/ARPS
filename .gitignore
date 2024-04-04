@@ -14,5 +14,5 @@ build/
 *.mp4
 *.log
 log/
-.onnx
+*.onnx
 unity_raycast/
