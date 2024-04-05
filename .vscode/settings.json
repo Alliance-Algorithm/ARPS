@@ -64,5 +64,5 @@
         "cinttypes": "cpp",
         "unordered_set": "cpp"
     },
-    "cmake.sourceDirectory": "/workspaces/TransferStation/1_Projects/Current/Alliance-radar-dev/Yolov5_cpp_test"
+    "cmake.sourceDirectory": "/workspaces/Alliance-radar/test/car_detect"
 }
