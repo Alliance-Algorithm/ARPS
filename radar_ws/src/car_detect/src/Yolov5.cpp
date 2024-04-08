@@ -8,17 +8,25 @@
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/float32_multi_array.hpp"
 #include <iostream>
-#include <math.h>
 #include <memory>
 #include <opencv2/opencv.hpp>
 #include <string>
 #include <time.h>
 #include <vector>
 
-Logger logger(Logger::file, Logger::debug, "../resources/user_logs/detect.log");
+#define _SHOW_IMAGE_ 1
+#define _NO_ARMOR_DETECT_ 0
+#define _DRAW_ARMOR_DETECT_RESULT_ 1
+
+Logger logger(Logger::file, Logger::debug, "./resources/user_logs/detect.log");
 auto lastTime = std::chrono::system_clock::now();
 auto lastTimeMs =
     std::chrono::time_point_cast<std::chrono::milliseconds>(lastTime);
+std::string car_classNames[] = {
+    "CantIdentfy", "B_Hero",      "B_Engineer", "B_Solider_1", "B_Solider_2",
+    "B_Solider_3", "B_Sentry",    "R_Hero",     "R_Engineer",  "R_Solider_1",
+    "R_Solider_2", "R_Solider_3", "R_Sentry"};
+
 /*
  * 检测结果
  * 机器人ID, x坐标, y坐标
@@ -97,13 +105,7 @@ void YOLOv5Detector::detect(cv::Mat &frame,
     }
 
     /*
-      在YOLOv5的输出中，每个预测框的信息是一个向量(det_output[i])，其长度取决于模型配置。这个向量包含了预测框的
-      位置、大小、对象置信度以及每个类别的置信度。具体来说，这个向量的前4个元素是预测框的中心坐标（x，y）
-      和宽高（w，h），第5个元素是对象置信度，也就是模型认为这个预测框内存在对象的概率。从第6个元素开始，
-      是每个类别的置信度。因此，colRange(5,
-      17)是用来获取每个类别的置信度的。起始索引是5，是因为我们
-      要跳过前5个元素（预测框的位置、大小和对象置信度）。结束索引是17，这意味着模型可以识别12个不同
-      的类别（17-5=12）。
+      向量det_output[i]的前4个元素是预测框的中心坐标（x，y）和宽高（w，h），colRange(5,17)获取每个类别的置信度
     */
     cv::Mat classes_scores = det_output.row(i).colRange(5, 17);
 
@@ -142,12 +144,14 @@ void YOLOv5Detector::detect(cv::Mat &frame,
     dr.box = boxes[index];
     dr.classId = idx;
     dr.score = confidences[index];
-    // cv::rectangle(frame, boxes[index], cv::Scalar(0, 0, 255), 1, 8);
-    // cv::putText(frame,
-    //             std::to_string(dr.classId) + " | " +
-    //             std::to_string(dr.score), cv::Point(dr.box.tl().x,
-    //             dr.box.tl().y - 10), cv::FONT_HERSHEY_SIMPLEX, 0.5,
-    //             cv::Scalar(0, 0, 255), 1);
+
+#if _DRAW_ARMOR_DETECT_RESULT_
+    cv::rectangle(frame, boxes[index], cv::Scalar(0, 0, 255), 1, 8);
+    cv::putText(frame,
+                std::to_string(dr.classId) + " | " + std::to_string(dr.score),
+                cv::Point(dr.box.tl().x, dr.box.tl().y - 10),
+                cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255), 1);
+#endif
     results.push_back(dr);
   }
 }
@@ -224,6 +228,8 @@ void YOLOv5Detector::detect(cv::Mat &frame, std::vector<DetectResult> &results,
     int index = indexes[i];
     dr.box = boxes[index];
     dr.score = confidences[index];
+
+#if !_NO_ARMOR_DETECT_
     if (dr.box.x > 0 && dr.box.y > 0 && dr.box.width > 0 && dr.box.height > 0 &&
         dr.box.x + dr.box.width <= frame.cols &&
         dr.box.y + dr.box.height <= frame.rows) {
@@ -263,10 +269,18 @@ void YOLOv5Detector::detect(cv::Mat &frame, std::vector<DetectResult> &results,
       } else {
         dr.classId = highestClassId + 1;
       }
-      dr.score = highestScore;
-      //   cv::imshow("car_images", car_image);
-      //   cv::waitKey(1);
+      double divide_num = 1;
+      while ((highestScore / divide_num) >= 1) {
+        divide_num += 1;
+      }
+      dr.score = highestScore / divide_num;
+
+#if _SHOW_IMAGE_
+      cv::imshow("car_images", car_image);
+      cv::waitKey(1);
+#endif
     }
+#endif
 
     cv::rectangle(frame, boxes[index], cv::Scalar(0, 0, 255), 2, 8);
     logger.INFO("classId: " + std::to_string(dr.classId) +
@@ -292,7 +306,6 @@ void YOLOv5Detector::detect(cv::Mat &frame, std::vector<DetectResult> &results,
   putText(frame, ss.str(), cv::Point(20, 80), cv::FONT_HERSHEY_PLAIN, 5.0,
           cv::Scalar(255, 255, 0), 5, 8);
 }
-
 /*
  * 数据发布类
  * 发布检测结果
@@ -334,7 +347,6 @@ int main(int argc, char **argv) {
     //[运行节点，并检测退出信号]
     logger.INFO("[√]successfully started.");
     std_msgs::msg::Float32MultiArray message;
-    std::string car_classNames[] = {"0", "1", "2", "3", "4", "5", "6", "7"};
 
     // [创建YOLOv5检测器]
     logger.INFO("YOLOv5Detector starting...");
@@ -360,7 +372,10 @@ int main(int argc, char **argv) {
     logger.INFO("[√]Video stream opened.");
 
     if (!capture.isOpened()) {
-      logger.ERRORS("[x]视频或摄像头打开失败");
+      logger.ERRORS("[x]Error opening video stream.");
+      return -1;
+    } else {
+      logger.INFO("[√]Video stream opened.");
     }
 
     // [创建图像容器]
@@ -368,10 +383,10 @@ int main(int argc, char **argv) {
     std::vector<DetectResult> results;
     std::vector<float> detect_result;
 
+#if _SHOW_IMAGE_
     cv::namedWindow("detect_window", 0);
     cv::resizeWindow("detect_window", cv::Size(960, 540));
-    // cv::namedWindow("car_images", 0);
-    // cv::resizeWindow("car_images", cv::Size(100, 100));
+#endif
 
     logger.INFO("Start detecting...");
     // [循环处理视频流]
@@ -399,11 +414,13 @@ int main(int argc, char **argv) {
                     cv::FONT_HERSHEY_SIMPLEX, 2, cv::Scalar(0, 0, 255), 3);
       }
 
+#if _SHOW_IMAGE_
       cv::imshow("detect_window", frame);
       char c = cv::waitKey(1);
       if (c == 27) { // ESC 退出
         break;
       }
+#endif
       // reset for next frame
       results.clear();
     }

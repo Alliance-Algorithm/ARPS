@@ -2,7 +2,7 @@
 // README at: https://github.com/devcontainers/templates/tree/main/src/docker-existing-dockerfile
 {
     "name": "radar-dev",
-    "image": "radar-alliance:2.0",
+    "image": "radar-alliance:2.1",
     "privileged": true,
     "mounts": [
         {
@@ -28,7 +28,8 @@
         "vscode": {
             "extensions": [
                 "ms-vscode.cpptools-extension-pack",
-                "GitHub.copilot"
+                "GitHub.copilot",
+                "llvm-vs-code-extensions.vscode-clangd"
             ]
         }
     }
