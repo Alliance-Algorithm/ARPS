@@ -3,15 +3,15 @@ FROM ros:humble
 SHELL ["/bin/bash", "-c"]
 
 # install basic tools
-
 RUN apt-get update && apt-get -y install \
     vim wget curl \
-    libopencv-dev ros-humble-cv-bridge\
-    python3 python3-pip \
-    && rm -rf /var/lib/apt/lists/*
+    libopencv-dev \
+    python3 python3-pip 
+    # && rm -rf /var/lib/apt/lists/*
 
 COPY ./requirements.txt ./
-RUN pip install -r ./requirements.txt && \
+RUN pip cache purge && \
+    pip install -r ./requirements.txt && \
     rm -f ./requirements.txt
 
 # install oh my zsh & change theme to af-magic
@@ -26,3 +26,7 @@ RUN wget https://gitee.com/mirrors/oh-my-zsh/raw/master/tools/install.sh -O zsh-
     rm ./zsh-install.sh 
 
 RUN chsh root -s /bin/zsh
+
+ENV NVIDIA_VISIBLE_DEVICES all
+    
+ENV NVIDIA_DRIVER_CAPABILITIES compute,utility
