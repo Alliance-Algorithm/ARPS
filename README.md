@@ -346,6 +346,15 @@ cd ../../bin/
 sudo ln -s /home/zjl/Downloads/TensorRT/TensorRT-8.4.3.1.Linux.x86_64-gnu.cuda-11.3.cudnn8.2/TensorRT-8.4.3.1/lib/* /usr/lib/
 sudo ln -s /home/zjl/Downloads/TensorRT/TensorRT-8.4.3.1.Linux.x86_64-gnu.cuda-11.3.cudnn8.2/TensorRT-8.4.3.1/include/* /usr/include/
 ```
+如果要使用 python 版本，则使用 pip 安装，执行下边的指令
+
+```
+#TensorRT文件夹下
+cd python/
+#这里的p37是指python版本为3.7
+pip install tensorrt-8.0.0.3-cp37-none-linux_x86_64.whl
+```
+
 ## Yolov5模型转换
 根据你训练模型所用的yolov5版本，```git clone```
 yolov5和tensorrtxx

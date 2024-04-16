@@ -7,6 +7,8 @@
 #include "Logger.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/float32_multi_array.hpp"
+#include <cstdint>
+#include <cstring>
 #include <iostream>
 #include <serial/serial.h>
 #include <unistd.h>
@@ -20,15 +22,15 @@
  */
 using map_robot_data_t = struct {
   uint16_t target_robot_id;
-  uint32_t target_position_x;
-  uint32_t target_position_y;
+  float target_position_x;
+  float target_position_y;
 };
 
 Logger logger(Logger::file, Logger::debug, "./resources/user_logs/serial.log");
 
 // 串口初始化
 serial::Serial radar_serial =
-    serial::Serial("/dev/ttyUSB0", 115200U, serial::Timeout::simpleTimeout(50U),
+    serial::Serial("/dev/ttyUSB1", 115200U, serial::Timeout::simpleTimeout(50U),
                    serial::eightbits, serial::parity_none, serial::stopbits_one,
                    serial::flowcontrol_none);
 /*
@@ -100,16 +102,9 @@ void serial_data_pack(uint8_t *serial_data,
   serial_data[6] = 0x0305 & 0xFF; // cmd id低8位
 
   // 打包数据
-  serial_data[7] = emeny_robot_positions.target_robot_id >> 8;
-  serial_data[8] = emeny_robot_positions.target_robot_id;
-  serial_data[9] = emeny_robot_positions.target_position_x >> 24;
-  serial_data[10] = emeny_robot_positions.target_position_x >> 16;
-  serial_data[11] = emeny_robot_positions.target_position_x >> 8;
-  serial_data[12] = emeny_robot_positions.target_position_x;
-  serial_data[13] = emeny_robot_positions.target_position_y >> 24;
-  serial_data[14] = emeny_robot_positions.target_position_y >> 16;
-  serial_data[15] = emeny_robot_positions.target_position_y >> 8;
-  serial_data[16] = emeny_robot_positions.target_position_y;
+  memccpy(&serial_data[7],&emeny_robot_positions.target_robot_id, 1, 2);
+  memccpy(&serial_data[9],&emeny_robot_positions.target_position_x, 1, 4);
+  memccpy(&serial_data[13],&emeny_robot_positions.target_position_y, 1, 4);
 
   // CRC16校验
   uint16_t CRC16 = CRC16_Check(serial_data + 5, 11);
