@@ -15,7 +15,7 @@ build/
 *.log
 log/
 *.onnx
-unity_raycast/
+raycast/
 .cache/
 .vscode/
 test/

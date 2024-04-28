@@ -16,29 +16,103 @@ import pycuda.autoinit
 import pycuda.driver as cuda
 import tensorrt as trt
 import logging
+import json
 
 # Defines
 VIDEO = 1
 CAMREA = 0
+RED = 0
+BLUE = 1
 
 # Config settings
-CONF_THRESH = 0.35
-IOU_THRESHOLD = 0.4
-LEN_ALL_RESULT = 38001
-LEN_ONE_RESULT = 38
-VIDEO_STREAM_MODE = VIDEO
-DEBUG = False
-publish_topic = "detect_result"
+with open('./resources/config.json') as f:
+    config = json.load(f)
 
-categories = ["CantIdentfy", "B_Hero",      "B_Engineer", "B_Solider_1", "B_Solider_2",
-              "B_Solider_3", "B_Sentry",    "R_Hero",     "R_Engineer",  "R_Solider_1",
-              "R_Solider_2", "R_Solider_3", "R_Sentry"]
+    CONF_THRESH = config['CONF_THRESH']
+    IOU_THRESHOLD = config['IOU_THRESHOLD']
+    LEN_ALL_RESULT = config['LEN_ALL_RESULT']
+    LEN_ONE_RESULT = config['LEN_ONE_RESULT']
+    VIDEO_STREAM_MODE = VIDEO if config['VIDEO_STREAM_MODE'] == "VIDEO" else CAMREA
+    DEBUG = True if config['DEBUG'] == "true" else False
+    FRIEND_SIDE = RED if config['FRIEND_SIDE'] == "RED" else BLUE
+    publish_topic = config['publish_topic']
 
-# Paths
-PLUGIN_LIBRARY = "./resources/userlib/libyologpu.so"
-car_engine_file_path = "./resources/models/car_identfy.engine"
-armor_engine_file_path = "./resources/models/armor_identfy.engine"
-video_path = "./resources/videos/2.mp4"
+    # Paths
+    PLUGIN_LIBRARY = config['PLUGIN_LIBRARY']
+    car_engine_file_path = config['car_engine_file_path']
+    armor_engine_file_path = config['armor_engine_file_path']
+    video_path = config['video_path']
+    log_path = config['log_path']
+
+# # Paths
+# PLUGIN_LIBRARY = "./resources/userlib/libyologpu.so"
+# car_engine_file_path = "./resources/models/car_identfy.engine"
+# armor_engine_file_path = "./resources/models/armor_identfy.engine"
+# video_path = "./resources/videos/2.mp4"
+# log_path = "./resources/user_logs/detect.log"
+
+# CONF_THRESH = 0.35
+# IOU_THRESHOLD = 0.4
+# LEN_ALL_RESULT = 38001
+# LEN_ONE_RESULT = 38
+# VIDEO_STREAM_MODE = VIDEO
+# DEBUG = True
+# FRIEND_SIDE = BLUE
+# publish_topic = "detect_result"
+
+
+# This is the ordered results of neural network
+categories = ["CantIdentfy",
+              "B_Hero", "B_Engineer", "B_Solider_3", "B_Solider_4", "B_Solider_5", "B_Sentry",
+              "R_Hero", "R_Engineer", "R_Solider_3", "R_Solider_4", "R_Solider_5", "R_Sentry"]
+# robot ids to be sent
+robot_id = [0, 101, 102, 103, 104, 105, 107, 1, 2, 3, 4, 5, 7]
+
+
+class inference_result:
+    def __init__(self):
+        self.image = None
+        self.box = None
+        self.score = None
+        self.classid = None
+
+
+def initialize_logging():
+    logger = logging.getLogger(__name__)
+    logger.setLevel(level=logging.INFO)
+    handler = logging.FileHandler(log_path)
+    handler.setLevel(logging.INFO)
+    formatter = logging.Formatter(
+        '[%(asctime)s][%(levelname)s] %(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+    return logger
+
+
+def package_message(message, result):
+    x, y = get_chassis_position(result.box)
+    message.data.append(
+        float(robot_id[int(result.classid)]))
+    message.data.append(float(x))
+    message.data.append(float(y))
+    return message
+
+
+def exclude_same_classid(results):
+    temp_results = [inference_result()]*12
+    for result in results:
+        if temp_results[int(result.classid)].score == None:
+            temp_results[int(result.classid)] = result
+        elif temp_results[int(result.classid)].score < result.score:
+            temp_results[int(result.classid)] = result
+        else:
+            pass
+
+    filtered_results = []
+    for temp_result in temp_results:
+        if temp_result.classid != None:
+            filtered_results.append(temp_result)
+    return filtered_results
 
 
 def get_chassis_position(box):
@@ -55,7 +129,7 @@ def get_chassis_position(box):
     return aver_x, chassis_y
 
 
-def plot_one_box(x, img, color=None, label=None, line_thickness=None):
+def plot_one_box(x, img, side=None, label=None, line_thickness=None):
     """
     @description: Plots one bounding box on image img,
                  this function comes from YoLov5 project.
@@ -73,7 +147,10 @@ def plot_one_box(x, img, color=None, label=None, line_thickness=None):
         line_thickness or round(0.001 * (img.shape[0] + img.shape[1]) / 2) + 1
     )  # line/font thickness
     # color = color or [random.randint(0, 255) for _ in range(3)]
-    color = (255, 50, 50)
+    if side == RED:
+        color = (50, 50, 255)
+    else:
+        color = (255, 50, 50)
     c1, c2 = (int(x[0]), int(x[1])), (int(x[2]), int(x[3]))
     cv2.rectangle(img, c1, c2, color, thickness=tl, lineType=cv2.LINE_AA)
 
@@ -92,14 +169,6 @@ def plot_one_box(x, img, color=None, label=None, line_thickness=None):
             thickness=tf,
             lineType=cv2.LINE_AA,
         )
-
-
-class inference_result:
-    def __init__(self):
-        self.image = None
-        self.box = None
-        self.score = None
-        self.classid = None
 
 
 class YOLOv5TRT(object):
@@ -304,7 +373,6 @@ class YOLOv5TRT(object):
                 output[i * LEN_ALL_RESULT: (i + 1) *
                        LEN_ALL_RESULT], batch_origin_h[i], batch_origin_w[i]
             )
-            # Draw rectangles and labels on the original image
             class_scores = [0] * 12
             for j in range(len(result_boxes)):
                 class_scores[int(result_classid[j])] += result_scores[j]
@@ -551,90 +619,149 @@ class Car_position_publisher(Node):
 
 
 def main(args=None):
-    rclpy.init(args=args)  # 初始化rclpy
-    publish_node = Car_position_publisher("Car_position_publisher")
 
-    # load custom plugin and engine
+    # [INITIALIZE]
+    logger = initialize_logging()
+
+    logger.info("---[Log start]---")
+    logger.info("CONFIG:" + str(config))
+
+    logger.info("Initializing node...")
+    rclpy.init(args=args)
+    publish_node = Car_position_publisher("Car_position_publisher")
+    logger.info("[√]Node initialized.")
+
+    logger.info("Loading videostream...")
     try:
         if VIDEO_STREAM_MODE == CAMREA:
             video_stream = cv2.VideoCapture(CAMREA)
+            index = CAMREA
+            while not video_stream.isOpened():
+                if index > 100:
+                    index = 0
+                index += 1
+                video_stream = cv2.VideoCapture(index)
         elif VIDEO_STREAM_MODE == VIDEO:
             video_stream = cv2.VideoCapture(video_path)
+            if not video_stream.isOpened():
+                logger.error("[x]can't open video")
+                return
     except Exception as e:
-        logging.ERROR()
-        print(e)
-
-    if not video_stream.isOpened():
-        print("video open error!")
-
-    ctypes.CDLL(PLUGIN_LIBRARY)
+        logger.error("[x]ERROR:")
+        logger.error(e)
+        return
 
     if DEBUG:
-        cv2.namedWindow("result", 0)
-        cv2.resizeWindow("result", (1600, 900))
+        try:
+            cv2.namedWindow("result", 0)
+            cv2.resizeWindow("result", (1600, 900))
+        except Exception as e:
+            logger.error("[x]ERROR:")
+            logger.error(e)
+    logger.info("[√]Loaded.")
 
-    yolov5_car_wrapper = YOLOv5TRT(car_engine_file_path)
-    yolov5_armor_wrapper = YOLOv5TRT(armor_engine_file_path)
+    # load custom plugin and engine
+    logger.info("Load custom plugin and engine...")
+    ctypes.CDLL(PLUGIN_LIBRARY)
+    logger.info("[√]Library loaded.")
 
     try:
-        frame_id = 1
+        yolov5_car_wrapper = YOLOv5TRT(car_engine_file_path)
+    except Exception as e:
+        logger.error("[x]ERROR:")
+        logger.error(e)
+        return
+    logger.info("[√]car engine loaded.")
+    try:
+        yolov5_armor_wrapper = YOLOv5TRT(armor_engine_file_path)
+    except Exception as e:
+        logger.error("[x]ERROR:")
+        logger.error(e)
+        return
+    logger.info("[√]armor engine loaded.")
+
+    # [MAIN LOOP]
+    try:
+        logger.info("[RUNNING MAIN LOOP]")
         while True:
-            last_time = int(round(time.time() * 1000))
+            try:
+                last_time = int(round(time.time() * 1000))
 
-            ret, image = video_stream.read()
+                ret, image = video_stream.read()
 
-            if not ret:
-                break
-            # create a new thread to do inference
-            car_thread = carInferThread(yolov5_car_wrapper, image)
-            car_thread.start()
-            car_thread.join()
+                if not ret:
+                    break
+                # create a new thread to do inference
+                car_thread = carInferThread(yolov5_car_wrapper, image)
+                car_thread.start()
+                car_thread.join()
 
-            car_inference_results, batch_image_raw = car_thread.return_result()
+                car_inference_results, batch_image_raw = car_thread.return_result()
 
-            armor_thread = armorInferThread(
-                yolov5_armor_wrapper, car_inference_results)
+                armor_thread = armorInferThread(
+                    yolov5_armor_wrapper, car_inference_results)
+                armor_thread.start()
+                armor_thread.join()
 
-            armor_thread.start()
+                final_results = exclude_same_classid(
+                    armor_thread.return_result())
 
-            armor_thread.join()
+                message = Float32MultiArray()
+                message.data = []
 
-            final_results = armor_thread.return_result()
+                current_time = int(round(time.time() * 1000))
 
-            message = Float32MultiArray()
-            message.data = []
+                logger.info(">[Result count] " + str(len(final_results)) +
+                            " [FPS] " + str(int(1000.0/(current_time-last_time))))
+                for result in final_results:
+                    logger.debug(
+                        "[Id]" + categories[int(result.classid)] + "| [Score] " + str(result.score))
+                    if FRIEND_SIDE == RED:
+                        if int(result.classid) < 7:
+                            message = package_message(message, result)
+                            if DEBUG:
+                                plot_one_box(result.box, batch_image_raw[0],
+                                             side=BLUE if int(
+                                    result.classid) < 7 else RED,
+                                    label="{}:{:.2f}".format(
+                                    categories[int(result.classid)], result.score),
+                                )
 
-            for result in final_results:
-                x, y = get_chassis_position(result.box)
-                message.data.append(float(result.classid))
-                message.data.append(float(x))
-                message.data.append(float(y))
+                    elif FRIEND_SIDE == BLUE:
+                        if int(result.classid) > 6:
+                            message = package_message(message, result)
+                            if DEBUG:
+                                plot_one_box(result.box, batch_image_raw[0],
+                                             side=BLUE if int(
+                                                 result.classid) < 7 else RED,
+                                             label="{}:{:.2f}".format(
+                                                 categories[int(result.classid)], result.score),
+                                             )
+
+                    else:
+                        message = package_message(message, result)
+                        if DEBUG:
+                            plot_one_box(result.box, batch_image_raw[0],
+                                         side=BLUE if int(
+                                result.classid) < 7 else RED,
+                                label="{}:{:.2f}".format(
+                                categories[int(result.classid)], result.score),
+                            )
+
+                publish_node.command_publisher_.publish(message)
+
                 if DEBUG:
-                    plot_one_box(
-                        result.box,
-                        batch_image_raw[0],
-                        label="{}:{:.2f}".format(
-                            categories[int(result.classid)
-                                       ], result.score
-                        ),
-                    )
+                    for i in range(len(batch_image_raw)):
 
-            publish_node.command_publisher_.publish(message)
+                        cv2.putText(batch_image_raw[i], "Process FPS: " + str(
+                            int(1000.0/(current_time-last_time))), (20, 50), 1, 4, (150, 255, 150), 4)
 
-            current_time = int(round(time.time() * 1000))
-
-            if DEBUG:
-                for i in range(len(batch_image_raw)):
-
-                    cv2.putText(batch_image_raw[i], "Process FPS: " + str(
-                        int(1000.0/(current_time-last_time))), (20, 50), 1, 4, (150, 255, 150), 4)
-
-                    cv2.imshow("result", batch_image_raw[i])
-                    cv2.waitKey(1)
-
-                    print(str(frame_id) + "|" +
-                          str(current_time-last_time) + "ms")
-                    frame_id += 1
+                        cv2.imshow("result", batch_image_raw[i])
+                        cv2.waitKey(1)
+            except Exception as e:
+                logger.error("[x]ERROR:")
+                logger.error(e)
+                return
 
     finally:
         # destroy the instance

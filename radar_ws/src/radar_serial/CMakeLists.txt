@@ -11,6 +11,7 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(serial REQUIRED)
+find_package(OpenCV REQUIRED)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -26,7 +27,7 @@ endif()
 
 ament_package()
 add_executable(radar_serial src/radar_serial.cpp)
-ament_target_dependencies(radar_serial rclcpp std_msgs serial)
+ament_target_dependencies(radar_serial rclcpp std_msgs serial OpenCV)
 
 install(TARGETS
   radar_serial
