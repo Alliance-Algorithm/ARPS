@@ -4,7 +4,9 @@
  *更新人:算法组-Lisiyao
  *更新内容:添加了日志系统
  */
-#include "Logger.hpp"
+#include "../include/Logger.hpp"
+#include "../include/nlohmann/json.hpp"
+
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/float32_multi_array.hpp"
 #include <charconv>
@@ -25,7 +27,37 @@
 #include <unistd.h>
 #include <vector>
 
-#define DEBUG true
+#define RED 100
+#define BLUE 101
+
+using json = nlohmann::json;
+
+// 读取配置文件
+struct Configs {
+    bool debug;
+    int Friend_Side;
+    std::string log_path;
+    std::string serial_port;
+};
+
+Configs read_config(std::string filename)
+{
+    std::ifstream i(filename);
+    json config_json;
+    i >> config_json;
+
+    Configs config;
+
+    config.debug = config_json["SERIAL_DEBUG"].get<std::string>() == "true" ? true : false;
+    config.Friend_Side = config_json["FRIEND_SIDE"].get<std::string>() == "RED" ? RED : BLUE;
+    config.log_path = config_json["serial_log_path"].get<std::string>();
+    config.serial_port = config_json["serial_port"].get<std::string>();
+    return config;
+}
+
+Configs configs = read_config("./resources/config.json");
+
+bool debug = configs.debug;
 
 std::map<float, std::string> categories = { { 0, "CantIdentfy" }, { 1, "R_Hero" }, { 2, "R_Engineer" },
     { 3, "R_Solider_1" }, { 4, "R_Solider_2" }, { 5, "R_Solider_3" },
@@ -46,15 +78,14 @@ struct __attribute__((packed)) map_robot_data_t {
     float target_position_y;
 };
 
-Logger logger(Logger::file, Logger::debug, "./resources/user_logs/serial.log");
+// 日志类初始化
+Logger logger(Logger::file, Logger::debug, configs.log_path);
 
-#if DEBUG
 cv::Mat minimap_image = cv::imread("./resources/images/RM2024Battlefield.png");
 cv::Mat temp_map;
-#endif
 
 // 串口初始化
-serial::Serial radar_serial = serial::Serial("/dev/ttyUSB0", 115200U, serial::Timeout::simpleTimeout(50U), serial::eightbits, serial::parity_none,
+serial::Serial radar_serial = serial::Serial(configs.serial_port, 115200U, serial::Timeout::simpleTimeout(50U), serial::eightbits, serial::parity_none,
     serial::stopbits_one, serial::flowcontrol_none);
 
 /*
@@ -76,10 +107,6 @@ void serial_data_pack(uint8_t* serial_data, map_robot_data_t emeny_robot_positio
     serial_data[4] = frame_header[4];
     reinterpret_cast<uint16_t&>(serial_data[5]) = 0x0305;
 
-    // 打包数据
-    // memccpy(&serial_data[7], &emeny_robot_positions.target_robot_id, 1, 2);
-    // memccpy(&serial_data[9], &emeny_robot_positions.target_position_x, 1, 4);
-    // memccpy(&serial_data[13], &emeny_robot_positions.target_position_y, 1, 4);
     reinterpret_cast<map_robot_data_t&>(serial_data[7]) = emeny_robot_positions;
 }
 
@@ -107,9 +134,8 @@ private:
             // 串口数据初始化容器
             std::vector<map_robot_data_t> emeny_robot_positions;
 
-#if DEBUG
-            minimap_image.copyTo(temp_map);
-#endif
+            if (debug)
+                minimap_image.copyTo(temp_map);
 
             // 串口数据解析
             if (msg->data.size() != 0) {
@@ -117,30 +143,36 @@ private:
                     map_robot_data_t emeny_robot_position;
 
                     emeny_robot_position.target_robot_id = msg->data.data()[i];
-                    emeny_robot_position.target_position_x = msg->data.data()[i + 1];
-                    emeny_robot_position.target_position_y = msg->data.data()[i + 2];
 
-#if DEBUG
-                    int car_position_x = int((emeny_robot_position.target_position_x / 28.0) * 1854.0);
-                    int car_position_y = int(((15.0 - emeny_robot_position.target_position_y) / 15.0) * 996.0);
-                    cv::Point2d car_point(car_position_x, car_position_y);
-                    cv::Point2d id_point(car_position_x + 30, car_position_y + 10);
+                    if (configs.Friend_Side == BLUE) {
+                        emeny_robot_position.target_position_x = msg->data.data()[i + 1];
+                        emeny_robot_position.target_position_y = msg->data.data()[i + 2];
+                    } else {
+                        emeny_robot_position.target_position_x = 28 - msg->data.data()[i + 1];
+                        emeny_robot_position.target_position_y = 15 - msg->data.data()[i + 2];
+                    }
 
-                    cv::Scalar color = int(emeny_robot_position.target_robot_id) > 7 ? cv::Scalar(255, 0, 0) : cv::Scalar(0, 0, 255);
+                    if (debug) {
+                        int car_position_x = int((emeny_robot_position.target_position_x / 28.0) * 1854.0);
+                        int car_position_y = int(((15.0 - emeny_robot_position.target_position_y) / 15.0) * 996.0);
+                        cv::Point2d car_point(car_position_x, car_position_y);
+                        cv::Point2d id_point(car_position_x + 30, car_position_y + 10);
 
-                    cv::circle(temp_map, car_point, 20, color, -1);
-                    cv::putText(temp_map, categories[int(emeny_robot_position.target_robot_id)], id_point, 1, 2,
-                        cv::Scalar(255, 255, 255), 2);
-#endif
+                        cv::Scalar color = int(emeny_robot_position.target_robot_id) > 7 ? cv::Scalar(255, 0, 0) : cv::Scalar(0, 0, 255);
+
+                        cv::circle(temp_map, car_point, 20, color, -1);
+                        cv::putText(temp_map, categories[int(emeny_robot_position.target_robot_id)], id_point, 1, 2,
+                            cv::Scalar(255, 255, 255), 2);
+                    }
 
                     emeny_robot_positions.push_back(emeny_robot_position);
                 }
             }
 
-#if DEBUG
-            cv::imshow("minimap", temp_map);
-            cv::waitKey(1);
-#endif
+            if (debug) {
+                cv::imshow("minimap", temp_map);
+                cv::waitKey(1);
+            }
 
             for (size_t i = 0; i < emeny_robot_positions.size(); i++) {
                 // 串口数据打包
@@ -161,8 +193,10 @@ private:
 // 串口发送数据
 int main(int argc, char** argv)
 {
-    cv::namedWindow("minimap", 0);
-    cv::resizeWindow("minimap", cv::Size(960, 540));
+    if (debug) {
+        cv::namedWindow("minimap", 0);
+        cv::resizeWindow("minimap", cv::Size(960, 540));
+    }
 
     try {
         // 初始化节点
@@ -172,6 +206,9 @@ int main(int argc, char** argv)
         // [创建对应节点的共享指针对象]
         auto positions_subscriber = std::make_shared<PositionsSubscriber>("positions_subscriber");
         logger.INFO("[√]Node initialized.");
+
+        logger.INFO("Friend Side:(RED 100 |BLUE 101) " + std::to_string(configs.Friend_Side));
+        logger.INFO("DEBUG: " + std::to_string(configs.debug));
 
         // [运行节点，并检测退出信号]
         rclcpp::spin(positions_subscriber);

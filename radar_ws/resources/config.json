@@ -4,12 +4,15 @@
     "LEN_ALL_RESULT": 38001,
     "LEN_ONE_RESULT": 38,
     "VIDEO_STREAM_MODE": "VIDEO",
-    "DEBUG": "false",
+    "DETECT_DEBUG": "false",
+    "SERIAL_DEBUG": "true",
     "FRIEND_SIDE": "BLUE",
     "publish_topic": "detect_result",
     "PLUGIN_LIBRARY": "./resources/userlib/libyologpu.so",
     "car_engine_file_path": "./resources/models/car_identfy.engine",
     "armor_engine_file_path": "./resources/models/armor_identfy.engine",
     "video_path": "./resources/videos/2.mp4",
-    "log_path": "./resources/user_logs/detect.log"
+    "detect_log_path": "./resources/user_logs/detect.log",
+    "serial_log_path": "./resources/user_logs/serial.log",
+    "serial_port": "/dev/ttyUSB0"
 }

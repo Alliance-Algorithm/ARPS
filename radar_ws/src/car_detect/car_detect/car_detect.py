@@ -33,7 +33,7 @@ with open('./resources/config.json') as f:
     LEN_ALL_RESULT = config['LEN_ALL_RESULT']
     LEN_ONE_RESULT = config['LEN_ONE_RESULT']
     VIDEO_STREAM_MODE = VIDEO if config['VIDEO_STREAM_MODE'] == "VIDEO" else CAMREA
-    DEBUG = True if config['DEBUG'] == "true" else False
+    DEBUG = True if config['DETECT_DEBUG'] == "true" else False
     FRIEND_SIDE = RED if config['FRIEND_SIDE'] == "RED" else BLUE
     publish_topic = config['publish_topic']
 
@@ -42,7 +42,7 @@ with open('./resources/config.json') as f:
     car_engine_file_path = config['car_engine_file_path']
     armor_engine_file_path = config['armor_engine_file_path']
     video_path = config['video_path']
-    log_path = config['log_path']
+    log_path = config['detect_log_path']
 
 # # Paths
 # PLUGIN_LIBRARY = "./resources/userlib/libyologpu.so"
