@@ -248,7 +248,7 @@ Cuda compilation tools, release 11.7, V11.7.152
 Build cuda_11.7.r11.7/compiler.29618528_0
 ```
 ### Cudnn安装
-[下载链接](https://link.zhihu.com/?target=https%3A//developer.nvidia.com/rdp/cudnn-download)
+[下载链接](https://developer.nvidia.com/cudnn-downloads)
 
 选择和你的cuda版本匹配的cudnn版本(不推荐9.0.0版本！会导致TensorRT版本过高不支持Tensorrtx,
 这里我选择8.6.0)
@@ -296,14 +296,14 @@ sudo cat /usr/local/cuda/include/cudnn_version.h | grep CUDNN_MAJOR -A 2
 
 我的CUDA版本是11.7，因此我要选择TensorRT8.4版本(不推荐10.0版本！会导致TensorRT版本过高不支持Tensorrtx)。在网页中找到对应版本,类似于：
 
-```TensorRT 8.0 EA for Linux x86_64 and CUDA 11.1, 11.2 & 11.3 TAR package```
+```TensorRT 8.4 GA Update 2 for Linux x86_64 and CUDA 11.0, 11.1, 11.2, 11.3, 11.4, 11.5, 11.6 and 11.7 TAR Package```
 这样会下载tar压缩包格式的安装包
 
 解压到你想要的文件夹(你自己记得住就行)
 
 我把TensorRT安装在了```/usr/local```下
 ```
-tar -xzvf TensorRT-8.0.0.3.Linux.x86_64-gnu.cuda-11.3.cudnn8.2.tar.gz -C /usr/local/
+tar -xzvf TensorRT-8.4.3.1.Linux.x86_64-gnu.cuda-11.6.cudnn8.4.tar.gz -C /usr/local/
 ```
 >若解压出错尝试```tar -xvf```
 
@@ -326,7 +326,7 @@ source ~/.bashrc
 
 测试安装是否成功,编译TensorRT的示例，会在bin路径下生成一个针对MINIST数据集的sample_mnist可执行文件
 ```
-cd /usr/local/TensorRT-8.0.0.3/samples/sampleMNIST
+cd /usr/local/TensorRT-8.4.3.1/samples/sampleMNIST
 sudo make
 cd ../../bin/
 ./sample_mnist
@@ -343,8 +343,8 @@ cd ../../bin/
 ```
 为了防止找不到 TensorRT 的库，建议把 TensorRT 的库和头文件链接一下
 ```
-sudo ln -s /home/zjl/Downloads/TensorRT/TensorRT-8.4.3.1.Linux.x86_64-gnu.cuda-11.3.cudnn8.2/TensorRT-8.4.3.1/lib/* /usr/lib/
-sudo ln -s /home/zjl/Downloads/TensorRT/TensorRT-8.4.3.1.Linux.x86_64-gnu.cuda-11.3.cudnn8.2/TensorRT-8.4.3.1/include/* /usr/include/
+sudo ln -s /usr/local/TensorRT-8.4.3.1/lib/* /usr/lib/
+sudo ln -s /usr/local/TensorRT-8.4.3.1/include/* /usr/include/
 ```
 如果要使用 python 版本，则使用 pip 安装，执行下边的指令
 
@@ -352,7 +352,7 @@ sudo ln -s /home/zjl/Downloads/TensorRT/TensorRT-8.4.3.1.Linux.x86_64-gnu.cuda-1
 #TensorRT文件夹下
 cd python/
 #这里的p37是指python版本为3.7
-pip install tensorrt-8.0.0.3-cp37-none-linux_x86_64.whl
+pip install tensorrt-8.4.3.1-cp37-none-linux_x86_64.whl
 ```
 
 ## Yolov5模型转换
@@ -361,9 +361,9 @@ yolov5和tensorrtxx
 
 (这里我是yolov5-v7.0和tensorrtx-yolov5-v7.0)
 
-[yolov5-v7.0](https://link.zhihu.com/?target=https%3A//github.com/ultralytics/yolov5/tree/v7.0)
+[yolov5-v7.0](http://github.com/ultralytics/yolov5/tree/v7.0)
 
-[tensorrtx-yolov5-v7.0](https://link.zhihu.com/?target=https%3A//github.com/wang-xinyu/tensorrtx/tree/yolov5-v7.0)
+[tensorrtx-yolov5-v7.0](http://github.com/wang-xinyu/tensorrtx/tree/yolov5-v7.0)
 
 将```/tensorrtx-yolov5-v7.0/yolov5```中的```gen_wts.py```文件拷贝到```yolov5-7.0```目录中，并将模型文件也拷贝到此目录
 
