@@ -248,7 +248,7 @@ Cuda compilation tools, release 11.7, V11.7.152
 Build cuda_11.7.r11.7/compiler.29618528_0
 ```
 ### Cudnn安装
-[下载链接](https://link.zhihu.com/?target=https%3A//developer.nvidia.com/rdp/cudnn-download)
+[下载链接](https://developer.nvidia.com/cudnn-downloads)
 
 选择和你的cuda版本匹配的cudnn版本(不推荐9.0.0版本！会导致TensorRT版本过高不支持Tensorrtx,
 这里我选择8.6.0)
