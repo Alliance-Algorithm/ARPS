@@ -44,22 +44,6 @@ with open('./resources/config.json') as f:
     video_path = config['video_path']
     log_path = config['detect_log_path']
 
-# # Paths
-# PLUGIN_LIBRARY = "./resources/userlib/libyologpu.so"
-# car_engine_file_path = "./resources/models/car_identfy.engine"
-# armor_engine_file_path = "./resources/models/armor_identfy.engine"
-# video_path = "./resources/videos/2.mp4"
-# log_path = "./resources/user_logs/detect.log"
-
-# CONF_THRESH = 0.35
-# IOU_THRESHOLD = 0.4
-# LEN_ALL_RESULT = 38001
-# LEN_ONE_RESULT = 38
-# VIDEO_STREAM_MODE = VIDEO
-# DEBUG = True
-# FRIEND_SIDE = BLUE
-# publish_topic = "detect_result"
-
 
 # This is the ordered results of neural network
 categories = ["CantIdentfy",
@@ -637,10 +621,12 @@ def main(args=None):
             video_stream = cv2.VideoCapture(CAMREA)
             index = CAMREA
             while not video_stream.isOpened():
-                if index > 100:
+                if index > 10:
                     index = 0
                 index += 1
                 video_stream = cv2.VideoCapture(index)
+                time.sleep(0.2)
+                
         elif VIDEO_STREAM_MODE == VIDEO:
             video_stream = cv2.VideoCapture(video_path)
             if not video_stream.isOpened():
