@@ -361,9 +361,9 @@ yolov5和tensorrtxx
 
 (这里我是yolov5-v7.0和tensorrtx-yolov5-v7.0)
 
-[yolov5-v7.0](github.com/ultralytics/yolov5/tree/v7.0)
+[yolov5-v7.0](http://github.com/ultralytics/yolov5/tree/v7.0)
 
-[tensorrtx-yolov5-v7.0](github.com/wang-xinyu/tensorrtx/tree/yolov5-v7.0)
+[tensorrtx-yolov5-v7.0](http://github.com/wang-xinyu/tensorrtx/tree/yolov5-v7.0)
 
 将```/tensorrtx-yolov5-v7.0/yolov5```中的```gen_wts.py```文件拷贝到```yolov5-7.0```目录中，并将模型文件也拷贝到此目录
 
