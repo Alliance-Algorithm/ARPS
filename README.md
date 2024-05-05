@@ -326,7 +326,7 @@ source ~/.bashrc
 
 测试安装是否成功,编译TensorRT的示例，会在bin路径下生成一个针对MINIST数据集的sample_mnist可执行文件
 ```
-cd /usr/local/TensorRT-8.0.0.3/samples/sampleMNIST
+cd /usr/local/TensorRT-8.4.3.1/samples/sampleMNIST
 sudo make
 cd ../../bin/
 ./sample_mnist
