@@ -296,14 +296,14 @@ sudo cat /usr/local/cuda/include/cudnn_version.h | grep CUDNN_MAJOR -A 2
 
 我的CUDA版本是11.7，因此我要选择TensorRT8.4版本(不推荐10.0版本！会导致TensorRT版本过高不支持Tensorrtx)。在网页中找到对应版本,类似于：
 
-```TensorRT 8.4 EA for Linux x86_64 and CUDA 11.1, 11.2 & 11.3 TAR package```
+```TensorRT 8.4 GA Update 2 for Linux x86_64 and CUDA 11.0, 11.1, 11.2, 11.3, 11.4, 11.5, 11.6 and 11.7 TAR Package```
 这样会下载tar压缩包格式的安装包
 
 解压到你想要的文件夹(你自己记得住就行)
 
 我把TensorRT安装在了```/usr/local```下
 ```
-tar -xzvf TensorRT-8.4.0.6.Linux.x86_64-gnu.cuda-11.3.cudnn8.2.tar.gz -C /usr/local/
+tar -xzvf TensorRT-8.4.3.1.Linux.x86_64-gnu.cuda-11.6.cudnn8.4.tar.gz -C /usr/local/
 ```
 >若解压出错尝试```tar -xvf```
 
