@@ -60,9 +60,9 @@ Configs configs = read_config("./resources/config.json");
 bool debug = configs.debug;
 
 std::map<float, std::string> categories = { { 0, "CantIdentfy" }, { 1, "R_Hero" }, { 2, "R_Engineer" },
-    { 3, "R_Solider_1" }, { 4, "R_Solider_2" }, { 5, "R_Solider_3" },
+    { 3, "R_Solider_3" }, { 4, "R_Solider_4" }, { 5, "R_Solider_5" },
     { 7, "R_Sentry" }, { 101, "B_Hero" }, { 102, "B_Engineer" },
-    { 103, "B_Solider_1" }, { 104, "B_Solider_2" }, { 105, "B_Solider_3" },
+    { 103, "B_Solider_3" }, { 104, "B_Solider_4" }, { 105, "B_Solider_5" },
     { 107, "B_Sentry" } };
 
 /*

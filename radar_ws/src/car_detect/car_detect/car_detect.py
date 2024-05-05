@@ -1,3 +1,4 @@
+import traceback
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import Float32MultiArray
@@ -71,7 +72,7 @@ def initialize_logging():
     handler.setFormatter(formatter)
     logger.addHandler(handler)
     return logger
-
+logger = initialize_logging()
 
 def package_message(message, result):
     x, y = get_chassis_position(result.box)
@@ -83,12 +84,15 @@ def package_message(message, result):
 
 
 def exclude_same_classid(results):
-    temp_results = [inference_result()]*12
+    temp_results = [inference_result()]*13
     for result in results:
-        if temp_results[int(result.classid)].score == None:
-            temp_results[int(result.classid)] = result
-        elif temp_results[int(result.classid)].score < result.score:
-            temp_results[int(result.classid)] = result
+        classid = int(result.classid)
+        if classid == 0:
+            continue
+        if temp_results[classid].score == None:
+            temp_results[classid] = result
+        elif temp_results[classid].score < result.score:
+            temp_results[classid] = result
         else:
             pass
 
@@ -358,10 +362,20 @@ class YOLOv5TRT(object):
                        LEN_ALL_RESULT], batch_origin_h[i], batch_origin_w[i]
             )
             class_scores = [0] * 12
+            if_identfy = False
             for j in range(len(result_boxes)):
+                if_identfy = True
                 class_scores[int(result_classid[j])] += result_scores[j]
-
-            classid = class_scores.index(max(class_scores)) + 1
+                # box = result_boxes[j]
+                # plot_one_box(
+                #     box,
+                #     batch_image_raw[i],
+                #     label="{}:{:.2f}".format(
+                #         categories[int(result_classid[j] + 1)
+                #                    ], result_scores[j]
+                #     ),
+                # )
+            classid = class_scores.index(max(class_scores)) + 1 if if_identfy else 0
         car_result.classid = classid
         return car_result
 
@@ -605,7 +619,7 @@ class Car_position_publisher(Node):
 def main(args=None):
 
     # [INITIALIZE]
-    logger = initialize_logging()
+    
 
     logger.info("---[Log start]---")
     logger.info("CONFIG:" + str(config))
@@ -626,6 +640,8 @@ def main(args=None):
                 index += 1
                 video_stream = cv2.VideoCapture(index)
                 time.sleep(0.2)
+            video_stream.set(cv2.CAP_PROP_FRAME_HEIGHT,2160)
+            video_stream.set(cv2.CAP_PROP_FRAME_WIDTH,3840)
                 
         elif VIDEO_STREAM_MODE == VIDEO:
             video_stream = cv2.VideoCapture(video_path)
@@ -745,8 +761,10 @@ def main(args=None):
                         cv2.imshow("result", batch_image_raw[i])
                         cv2.waitKey(1)
             except Exception as e:
-                logger.error("[x]ERROR:")
+                logger.error("[x]main loop error:")
                 logger.error(e)
+                logger.error('\n','>>>' * 20)
+                logger.error(traceback.print_exc())
                 return
 
     finally:

@@ -3,7 +3,7 @@
     "IOU_THRESHOLD": 0.4,
     "LEN_ALL_RESULT": 38001,
     "LEN_ONE_RESULT": 38,
-    "VIDEO_STREAM_MODE": "VIDEO",
+    "VIDEO_STREAM_MODE": "CAMERA",
     "DETECT_DEBUG": "true",
     "SERIAL_DEBUG": "true",
     "FRIEND_SIDE": "RED",
