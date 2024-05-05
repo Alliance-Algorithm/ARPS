@@ -343,8 +343,8 @@ cd ../../bin/
 ```
 为了防止找不到 TensorRT 的库，建议把 TensorRT 的库和头文件链接一下
 ```
-sudo ln -s /home/zjl/Downloads/TensorRT/TensorRT-8.4.3.1.Linux.x86_64-gnu.cuda-11.3.cudnn8.2/TensorRT-8.4.3.1/lib/* /usr/lib/
-sudo ln -s /home/zjl/Downloads/TensorRT/TensorRT-8.4.3.1.Linux.x86_64-gnu.cuda-11.3.cudnn8.2/TensorRT-8.4.3.1/include/* /usr/include/
+sudo ln -s /usr/local/TensorRT-8.4.3.1/lib/* /usr/lib/
+sudo ln -s /usr/local/TensorRT-8.4.3.1/include/* /usr/include/
 ```
 如果要使用 python 版本，则使用 pip 安装，执行下边的指令
 
@@ -352,7 +352,7 @@ sudo ln -s /home/zjl/Downloads/TensorRT/TensorRT-8.4.3.1.Linux.x86_64-gnu.cuda-1
 #TensorRT文件夹下
 cd python/
 #这里的p37是指python版本为3.7
-pip install tensorrt-8.0.0.3-cp37-none-linux_x86_64.whl
+pip install tensorrt-8.4.3.1-cp37-none-linux_x86_64.whl
 ```
 
 ## Yolov5模型转换
@@ -361,9 +361,9 @@ yolov5和tensorrtxx
 
 (这里我是yolov5-v7.0和tensorrtx-yolov5-v7.0)
 
-[yolov5-v7.0](https://link.zhihu.com/?target=https%3A//github.com/ultralytics/yolov5/tree/v7.0)
+[yolov5-v7.0](github.com/ultralytics/yolov5/tree/v7.0)
 
-[tensorrtx-yolov5-v7.0](https://link.zhihu.com/?target=https%3A//github.com/wang-xinyu/tensorrtx/tree/yolov5-v7.0)
+[tensorrtx-yolov5-v7.0](github.com/wang-xinyu/tensorrtx/tree/yolov5-v7.0)
 
 将```/tensorrtx-yolov5-v7.0/yolov5```中的```gen_wts.py```文件拷贝到```yolov5-7.0```目录中，并将模型文件也拷贝到此目录
 
