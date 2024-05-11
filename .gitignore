@@ -18,5 +18,5 @@ log/
 unity_node/
 .cache/
 .vscode/
-test/
+TEST/
 *.zip
