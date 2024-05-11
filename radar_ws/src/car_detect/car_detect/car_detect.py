@@ -1,4 +1,6 @@
 import traceback
+
+import ffmpeg
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import Float32MultiArray
@@ -635,14 +637,28 @@ def main(args=None):
             video_stream = cv2.VideoCapture(CAMREA)
             index = CAMREA
             while not video_stream.isOpened():
+                index += 1
                 if index > 10:
                     index = 0
-                index += 1
-                video_stream = cv2.VideoCapture(index)
-                time.sleep(0.2)
-            video_stream.set(cv2.CAP_PROP_FRAME_HEIGHT,2160)
-            video_stream.set(cv2.CAP_PROP_FRAME_WIDTH,3840)
                 
+                try:
+                    video_stream = cv2.VideoCapture(index)
+                    
+                except Exception as e:
+                    pass
+                time.sleep(0.2)
+            
+            try:
+                video_stream.release()
+                ffmpeg_input = '/dev/video'+str(index)
+                video_stream = (
+                    ffmpeg
+                    .input(ffmpeg_input,s="3840x2160",pix_fmt="nv12")
+                    .output('pipe:', format='rawvideo', pix_fmt='nv12')
+                    .run_async(pipe_stdout=True)
+                )
+            except Exception as e:
+                logger.error(e)
         elif VIDEO_STREAM_MODE == VIDEO:
             video_stream = cv2.VideoCapture(video_path)
             if not video_stream.isOpened():
@@ -656,7 +672,7 @@ def main(args=None):
     if DEBUG:
         try:
             cv2.namedWindow("result", 0)
-            cv2.resizeWindow("result", (1600, 900))
+            cv2.resizeWindow("result", (800, 450))
         except Exception as e:
             logger.error("[x]ERROR:")
             logger.error(e)
@@ -689,10 +705,22 @@ def main(args=None):
             try:
                 last_time = int(round(time.time() * 1000))
 
-                ret, image = video_stream.read()
+                if VIDEO_STREAM_MODE == CAMREA:
+                    in_bytes = video_stream.stdout.read(3840 * 2160 * 3 // 2)  # nv12 format
+                    if not in_bytes:
+                        break
+                    in_frame = (
+                        np
+                        .frombuffer(in_bytes, np.uint8)
+                        .reshape([2160 * 3 // 2, 3840])
+                    )
+                    image = cv2.cvtColor(in_frame, cv2.COLOR_YUV2BGR_NV12)
+                    video_stream.stdout.flush()
 
-                if not ret:
-                    break
+                elif VIDEO_STREAM_MODE == VIDEO:
+                    ret, image = video_stream.read()
+                    if not ret:
+                        break
                 # create a new thread to do inference
                 car_thread = carInferThread(yolov5_car_wrapper, image)
                 car_thread.start()
