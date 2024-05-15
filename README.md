@@ -1,114 +1,76 @@
 # Alliance战队-雷达兵种项目文档 
 
+> 注意：此仓库目前为开发版本，代码并不完全，请先不要部署，否则有很大概率出现项目文件缺失/跑不起来的状况
+
 ## 概述
 
-本项目基于ROS2开发，旨在实现车辆目标检测和位置信息传输，流程为利用YOLOv5进行图像识别、将识别结果传输至Unity程序，并通过串口发送至雷达系统。项目通过多个节点协同工作，完成从图像处理到位置数据传输的全流程。
+不同于使用较为广泛的PnP方案和双目相机/多相机+激光雷达联合标定方案，我们采用了成本更低，不需要进行测距，更贴近符合人脑思维的定位方式。
+
+我们的大脑能够很容易的根据雷达的二维画面将机器人具体位置自动拟合出来，这是因为我们其实在脑内根据场地的建模进行了一次碰撞检测，而我们又拥有场地的高精度模型，我们何不利用游戏引擎的强大能力模仿这一过程呢？按照这个思路，我们设计出了这一套有些“歪门邪道”但效果良好的单目相机+游戏引擎的定位方案。
+
+本项目基于ROS2+Unity实现，代码遵循ROS架构，利用YOLOv5进行机器人图像识别、将识别结果传输至Unity程序进行碰撞检测，并通过串口发送至裁判系统。通过多个节点协同工作，完成从图像处理到位置数据传输的全流程。
+
+由于是初次参与到比赛中，而雷达程序又只有我一个人完成，本程序很多地方都不完善,更多的是希望能提供一些新思路。
+
+2023年雷达站视频开源可参阅我们战队的视频：[RoboMaster2023北部分区赛 南京理工大学 Alliance战队 雷达录像](https://www.bilibili.com/video/BV1LW4y1Q7ab)
+
+
+## 开发及运行环境：
+Ubuntu 22.04 LTS 
+
+ros humble
+
+Unity 2023.3.13f103 
+
+VScode + Devcontainer, 全Docker化开发
+
+## 一些问题
+双层神经网络的开销较大(RTX3070 Laptop ~40FPS | RTX 1660S ~ 20FPS)
+
+我们的方案虽然不需要激光雷达，规避了繁琐的解算和标定问题，但受制于相机镜头焦距及相机分辨率，远处装甲板在图像中的特征比较差，即使使用60000张图片数据集训练将近300个epoch，仍然会出现较多识别错误/识别不出来的问题
+
+由于精力有限，程序并没有漂亮的GUI界面，最多利用opencv的imshow函数显示一些debug画面。
+
+Unity作为游戏引擎，功能十分强大，然而Unity中的物理相机毕竟无法完全匹配现实的相机画面，我也没有找到一个较好的方法根据相机画面解出相机在unity世界中的准确位姿，PnP解算出的位置有一定误差，这个误差放在雷达画面上对远处目标精度的影响是毁灭性的。所以，我们只能动用“智能人工”，手动对准相机画面，误差取决于手抖程度（笑
 
 ## 整体架构
 
 项目的整体架构如下：
 
 ```
-.                   #根目录
+.                   #根目录 radar_ws
 ├── Dockerfile               # Docker容器构建文件
 ├── README.md                # 项目说明文档
 └── radar_ws                 # ROS2工作空间
-    ├── build                   # 编译输出目录
-    ├── install                 # 安装输出目录
     ├── launch.sh               # 启动脚本
-    ├── log                     # 日志目录
     ├── rebuild.sh              # 重新构建脚本
     ├── resources               # 资源文件夹
-    │   ├── models               # 模型文件夹
-    │   │   ├── armor_identfy.onnx   # 装甲板识别模型
-    │   │   └── car_identfy.onnx     # 车辆识别模型
+    │   ├── models               # 模型文件夹 ***                      
+    │   │   ├── armor_identfy.engine   # 装甲板识别模型(TensorRT)
+    │   │   └── car_identfy.engine     # 车辆识别模型(TenserRT)
     │   ├── user_logs            # 用户日志文件夹
     │   │   ├── detect.log           # 车辆检测日志
     │   │   └── serial.log           # 串口通信日志
-    │   └── videos               # 视频文件夹
+    │   ├── videos               # 测试视频文件夹
+    │   ├── userlib              # GPU加速相关库
+    │   └── config.json          # 项目配置文件 ***
     └── src             # ROS2包源代码目录
         ├── ROS_TCP_Endpoint    # ROS TCP终端节点
         ├── car_detect          # 车辆检测节点
-        │   ├── CMakeLists.txt      # CMake构建配置文件
-        │   ├── package.xml         # 包描述文件
-        │   └── src                 # 源代码目录
-        │       ├── Logger.hpp      # 日志工具头文件
-        │       └── Yolov5.cpp      # YOLOv5检测实现源文件
         ├── radar_bringup       # 雷达启动节点
-        │   ├── CMakeLists.txt      # CMake构建配置文件
-        │   ├── launch              # 启动文件目录
-        │   │   └── radar.launch.py # 雷达启动配置文件
-        │   └── package.xml         # 包描述文件
-        ├── radar_serial        # 串口通信节点
-        │   ├── CMakeLists.txt      # CMake构建配置文件
-        │   ├── package.xml         # 包描述文件
-        │   └── src                 # 源代码目录
-        │       ├── Logger.hpp      # 日志工具头文件
-        │       └── radar_serial.cpp  # 串口通信实现源文件
+        ├── radar_serial        # 串口通信/小地图显示节点
         ├── ros2_serial         # ROS2串口通信包
-        │   ├── CMakeLists.txt      # CMake构建配置文件
-        │   ├── LICENSE             # 许可证文件
-        │   ├── README.md           # 说明文档
-        │   ├── include             # 头文件目录
-        │   │   └── serial          # 串口库头文件目录
-        │   ├── package.xml         # 包描述文件
-        │   └── src                 # 源代码目录
-        │       ├── impl            # 实现文件目录
-        │       └── serial.cc       # 串口通信实现源文件
-        └── unity_raycast       # Unity节点
+        └── serial_util         # 串口工具包(CRC校验等)
 
 ```
 
-- **car_detect节点**：负责读取摄像机图像，利用双层YOLOv5网络进行目标识别，分别得到机器人坐标和种类，发送给unity仿真程序。
+- **car_detect节点**：负责读取摄像机图像，利用双层YOLOv5网络进行目标识别，分别得到机器人坐标和种类，发送给unity程序。
   
 - **unity_raycast程序**：接收car_detect发送的坐标信息，进行碰撞检测获得三维坐标，发送给radar_serial。
 
-- **radar_serial节点**：接收unity程序发送的目标位置信息，将数据通过串口发送至雷达系统。
+- **radar_serial节点**：接收unity程序发送的目标位置信息，将数据通过串口发送至裁判系统。
 
-## 3. 功能节点详解
-
-### 3.1. car_detect节点
-
-#### 3.1.1. 功能介绍
-
-car_detect节点是整个系统的核心节点，主要负责图像处理和目标检测。其功能包括：
-
-- 读取摄像机图像。
-- 利用YOLOv5模型进行目标识别，包括车辆和装甲板。
-- 提取识别结果中的机器人坐标和种类。
-- 发布目标位置信息至Unity程序。
-
-#### 3.1.2. 代码结构
-
-car_detect节点的代码结构如下：
-
-- **YOLOv5Detector类**：用C++重写检测部分代码，封装了YOLOv5目标检测器，负责加载模型和执行检测。
-  
-- **Points_publisher类**：数据发布类，负责发布检测结果至指定话题。
-
-### 3.2. radar_serial节点
-
-#### 3.2.1. 功能介绍
-
-radar_serial节点负责接收unity程序发送的目标位置信息，并通过串口将数据发送至裁判系统。其功能包括：
-
-- 订阅unity程序发布的目标位置信息。
-- 对接收的数据进行解析和打包。
-- 通过串口将打包好的数据发送至雷达系统。
-
-#### 3.2.2. 代码结构
-
-radar_serial节点的代码结构如下：
-
-- **CRC16_Check函数**：实现CRC16校验算法，用于数据完整性校验。
-  
-- **CRC8_Check函数**：实现CRC8校验算法，用于帧头完整性校验。
-
-- **serial_data_pack函数**：将接收到的目标位置信息打包成串口数据。
-
-- **PositionsSubscriber类**：数据订阅类，负责订阅unity程序发布的目标位置信息，并发送至串口。
-
-## 4. 部署方法
+## 部署方法
 
 克隆本项目，按照DockerFile构建镜像后进入docker容器内
 
@@ -118,7 +80,9 @@ cd radar_ws
 ./rebuild.sh
 ```
 
-在 ```./radar_ws/resources/models```下放置训练好的onnx模型(命名为```car_identfy.onnx```和```armor_identfy.onnx```)
+在 ```./radar_ws/resources/models```下放置训练好的模型(命名为```car_identfy.engine```和```armor_identfy.engine```),你可以自定义名称，只需要更改config.json中对应项目即可。
+
+> 关于如何将yolov5训练得到的pt模型转换为tenserRT可用的engine模型见下文
 
 
 运行节点
@@ -141,10 +105,36 @@ cd radar_ws
 [2024-04-04 12:33:08] [ERROR]: [x]Error in command_callback: OpenCV(4.5.4) ./modules/dnn/src/onnx/onnx_importer.cpp:739: error: (-2:Unspecified error) in function 'handleNode'
 ---[ 结束日志 | 时间 2024-04-04 12:33:08 ]---
 ```
+# 配置文件
+./radar_ws/resources/config.json
+```
+{
+    "CONF_THRESH": 0.30,        #置信度阈值
+    "IOU_THRESHOLD": 0.4,       #IOU阈值
+    "LEN_ALL_RESULT": 38001,    #最大识别数量
+    "LEN_ONE_RESULT": 38,       #一次最多识别数量
+    "VIDEO_STREAM_MODE": "VIDEO",   #模式(VIDEO:视频测试 | CAMERA:正常读取摄像头运行)
+    "DETECT_DEBUG": "true",         #是否显示神经网络识别画面(DEBUG选项)
+    "SERIAL_DEBUG": "true",         #是否显示小地图(DEBUG选项)
+    "FRIEND_SIDE": "BLUE",          #己方颜色
+    "publish_topic": "detect_result",   #神经网络识别结果发布的topic name
+    "PLUGIN_LIBRARY": "./resources/userlib/libyologpu.so",  #GPU加速相关库文件路径
+    "car_engine_file_path": "./resources/models/car_identfy.engine", #模型文件路径
+    "armor_engine_file_path": "./resources/models/armor_identfy.engine", #模型文件路径
+    "video_path": "./resources/videos/2.mp4", #测试视频文件路径
+    "detect_log_path": "./resources/user_logs/detect.log", #神经网络日志文件路径
+    "serial_log_path": "./resources/user_logs/serial.log", #串口日志文件路径
+    "serial_port": "/dev/ttyUSB0"  #串口USB转TTL模块路径(更改为你的路径)
+}
+```
 
-# 在Docker内配置TensorRT + GPU环境
+---
+
+
+# 附录*  在Docker内配置TensorRT + GPU环境(将yolov5训练得到的pt模型转换为tenserRT可用的engine模型)
 流程：yolo v5 训练模型 --> model.pt --> 利用TensorRTx 转为 .engine
 ## CUDA + Cudnn + TensorRT 配置
+> 此项目GPU加速基于Nvidia显卡，其他品牌显卡请自行搜索配置TensorRT教程，不能保证运行不出错
 ### Nvidia显卡驱动安装
 选择软件和更新
 ![软件和更新](resources/nvidia-driver-1.png)

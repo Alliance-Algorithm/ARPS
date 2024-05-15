@@ -1,3 +1,4 @@
+from queue import Queue
 import traceback
 
 import ffmpeg
@@ -573,6 +574,27 @@ class YOLOv5TRT(object):
         boxes = np.stack(keep_boxes, 0) if len(keep_boxes) else np.array([])
         return boxes
 
+class readImageThread(threading.Thread):
+    def __init__(self, video_stream ,frames):
+        threading.Thread.__init__(self)
+        self.video_stream = video_stream
+        self.frames = frames
+
+    def run(self):
+        while True:
+            in_bytes = self.video_stream.stdout.read(3840 * 2160 * 3 // 2)  # nv12 format
+            if not in_bytes:
+                break
+            in_frame = (
+                np
+                .frombuffer(in_bytes, np.uint8)
+                .reshape([2160 * 3 // 2, 3840])
+            )
+            image = cv2.cvtColor(in_frame, cv2.COLOR_YUV2BGR_NV12)
+            self.video_stream.stdout.flush()
+            if self.frames.qsize() <= 1:
+                self.frames.put(image)
+
 
 class carInferThread(threading.Thread):
     def __init__(self, yolov5_wrapper, image):
@@ -701,25 +723,20 @@ def main(args=None):
     # [MAIN LOOP]
     try:
         logger.info("[RUNNING MAIN LOOP]")
+        frames = Queue()
+        read_image_thread = readImageThread(video_stream,frames)
+        read_image_thread.start()
         while True:
             try:
                 last_time = int(round(time.time() * 1000))
 
-                if VIDEO_STREAM_MODE == CAMREA:
-                    in_bytes = video_stream.stdout.read(3840 * 2160 * 3 // 2)  # nv12 format
-                    if not in_bytes:
-                        break
-                    in_frame = (
-                        np
-                        .frombuffer(in_bytes, np.uint8)
-                        .reshape([2160 * 3 // 2, 3840])
-                    )
-                    image = cv2.cvtColor(in_frame, cv2.COLOR_YUV2BGR_NV12)
-                    video_stream.stdout.flush()
-
-                elif VIDEO_STREAM_MODE == VIDEO:
+                if VIDEO_STREAM_MODE == VIDEO:
                     ret, image = video_stream.read()
                     if not ret:
+                        break
+                else:
+                    image = frames.get()
+                    if not image.size:
                         break
                 # create a new thread to do inference
                 car_thread = carInferThread(yolov5_car_wrapper, image)
@@ -799,5 +816,6 @@ def main(args=None):
         # destroy the instance
         yolov5_car_wrapper.destroy()
         yolov5_armor_wrapper.destroy()
+        read_image_thread.join()
     rclpy.spin(publish_node)  # 保持节点运行，检测是否收到退出指令（Ctrl+C）
     rclpy.shutdown()  # 关闭rclpy

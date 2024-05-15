@@ -179,7 +179,6 @@ private:
                 uint8_t serial_data[19];
                 serial_data_pack(serial_data, emeny_robot_positions[i], i);
                 serial_util::dji_crc::append_crc16(serial_data);
-                logger.INFO(std::to_string(reinterpret_cast<uint16_t&>(serial_data[7])));
                 // 串口数据发送
                 radar_serial.write(serial_data, sizeof(serial_data));
             }
