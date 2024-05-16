@@ -1,11 +1,6 @@
-/*
- *@email lisiyao20041017@gmail.com
- *最后更新时间:2024/3/19 22p.m.
- *更新人:算法组-Lisiyao
- *更新内容:添加了日志系统
- */
 #include "../include/Logger.hpp"
 #include "../include/nlohmann/json.hpp"
+#include "../include/radar_cmd.hpp"
 
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/float32_multi_array.hpp"
@@ -26,9 +21,6 @@
 #include <string>
 #include <unistd.h>
 #include <vector>
-
-#define RED 100
-#define BLUE 101
 
 using json = nlohmann::json;
 
@@ -110,14 +102,37 @@ void serial_data_pack(uint8_t* serial_data, map_robot_data_t emeny_robot_positio
     reinterpret_cast<map_robot_data_t&>(serial_data[7]) = emeny_robot_positions;
 }
 
+/*
+ * 串口数据打包
+ * @param double_debuff_cmd 雷达是否确认触发双倍易伤
+ * @param req 包序号
+ * @return serial_data 串口数据
+ */
+void serial_data_pack(uint8_t* serial_data, int double_debuff_cmd, int req)
+{
+    // 帧头
+    uint8_t frame_header[5] = { 0xA5, 0x0A, 0, (uint8_t)req }; // SOF, 数据长度高8位, 数据长度低8位, 包序号
+    serial_util::dji_crc::append_crc8(frame_header);
+
+    for (int i = 0; i < 5; i++)
+        serial_data[i] = frame_header[i];
+
+    reinterpret_cast<uint16_t&>(serial_data[5]) = 0x0121;
+
+    reinterpret_cast<int&>(serial_data[7]) = double_debuff_cmd;
+}
+
 /*  数据订阅&串口发送类
  *  订阅数据并发送到串口
  */
 class PositionsSubscriber : public rclcpp::Node {
 public:
+    radar::Radar_decision radar_decisioner;
+
     // 构造函数
     PositionsSubscriber(std::string name)
         : Node(name)
+        , radar_decisioner(&radar_serial, &logger, configs.Friend_Side)
     {
         position_subscribe_ = this->create_subscription<std_msgs::msg::Float32MultiArray>(
             "car_positions", 10, std::bind(&PositionsSubscriber::command_callback, this, std::placeholders::_1));
@@ -183,6 +198,11 @@ private:
                 radar_serial.write(serial_data, sizeof(serial_data));
             }
             logger.INFO("Send data to radar_serial(size:" + std::to_string(emeny_robot_positions.size()) + ")");
+            uint8_t radar_decision_data[10];
+            serial_data_pack(radar_decision_data, radar_decisioner.radar_information_.double_debuff_cmd, 0);
+            serial_util::dji_crc::append_crc16(radar_decision_data);
+            radar_serial.write(radar_decision_data, sizeof(radar_decision_data));
+            logger.INFO("Send cmd data: " + std::to_string(radar_decisioner.radar_information_.double_debuff_cmd));
         } catch (const std::exception& e) {
             logger.ERRORS("[x]Error in command_callback: " + std::string(e.what()));
         }
@@ -201,14 +221,12 @@ int main(int argc, char** argv)
         // 初始化节点
         logger.INFO("Initializing node...");
         rclcpp::init(argc, argv);
-
         // [创建对应节点的共享指针对象]
         auto positions_subscriber = std::make_shared<PositionsSubscriber>("positions_subscriber");
         logger.INFO("[√]Node initialized.");
 
         logger.INFO("Friend Side:(RED 100 |BLUE 101) " + std::to_string(configs.Friend_Side));
         logger.INFO("DEBUG: " + std::to_string(configs.debug));
-
         // [运行节点，并检测退出信号]
         rclcpp::spin(positions_subscriber);
         rclcpp::shutdown();
