@@ -1,12 +1,17 @@
 #pragma once
 
-#include "../include/receive.hpp"
 #include "Logger.hpp"
+#include "receive.hpp"
+
 #include <bitset>
+
 #include <opencv2/core.hpp>
+
 #include <serial/serial.h>
 #include <serial_util/crc/dji_crc.hpp>
 #include <serial_util/package_receive.hpp>
+
+#include <string>
 #include <unistd.h>
 
 #define RED 100
@@ -48,9 +53,10 @@ struct RadarMarkProgress {
     int mark_sentry_progress;
 };
 
-class Radar_decision {
+class Radar_decisioner {
 public:
-    Radar_decision(serial::Serial* serial, Logger* logger, int friend_side)
+    Radar_decisioner() {};
+    Radar_decisioner(std::shared_ptr<serial::Serial> serial, Logger* logger, int friend_side)
         : radar_serial_(serial)
         , logger(logger)
     {
@@ -61,6 +67,7 @@ public:
             0, 0, 0, 0, 0, 0
         };
         enable_double_debuff_by = Enable_double_debuff_by { 0, 0 };
+        logger->INFO("[√]initialized game status receive node.");
     };
 
     void receive_status_data()
@@ -149,7 +156,7 @@ public:
     }
 
     package::receive::Frame frame_;
-    serial::Serial* radar_serial_;
+    std::shared_ptr<serial::Serial> radar_serial_;
     size_t cache_size_ = 0;
 
     Radar_information radar_information_;
@@ -164,6 +171,7 @@ public:
 
         // reset status if game not start
         if (radar_information_.gamestate == GameState::SETTLING) {
+            logger->INFO(">>>>>Game state:END\nReset values.");
             radar_information_.enemy_sentry_hp = 400;
             radar_information_.double_debuff_cmd = 0;
             radar_information_.enable_double_debuff = false;
@@ -190,8 +198,10 @@ public:
             enable_double_debuff_by.big_buff = true;
         }
 
-        if (radar_information_.enable_double_debuff)
+        if (radar_information_.enable_double_debuff) {
             radar_information_.double_debuff_cmd++;
+            logger->INFO("--->Changed cmd id: " + std::to_string(radar_information_.double_debuff_cmd));
+        }
     };
 };
 

@@ -2,9 +2,9 @@ from queue import Queue
 import traceback
 
 import ffmpeg
-import rclpy
-from rclpy.node import Node
-from std_msgs.msg import Float32MultiArray
+import rclpy # type: ignore
+from rclpy.node import Node # type: ignore
+from std_msgs.msg import Float32MultiArray # type: ignore
 
 # Don't delete the imports
 import ctypes
