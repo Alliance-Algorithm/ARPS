@@ -67,7 +67,7 @@ class inference_result:
 
 def initialize_logging():
     logger = logging.getLogger(__name__)
-    logger.setLevel(level=logging.INFO)
+    logger.setLevel(level=logging.DEBUG)
     handler = logging.FileHandler(log_path)
     handler.setLevel(logging.INFO)
     formatter = logging.Formatter(
@@ -88,9 +88,11 @@ def package_message(message, result):
 
 def exclude_same_classid(results):
     temp_results = [inference_result()]*13
+    filtered_results = []
     for result in results:
         classid = int(result.classid)
         if classid == 0:
+            # filtered_results.append(result)
             continue
         if temp_results[classid].score == None:
             temp_results[classid] = result
@@ -99,7 +101,6 @@ def exclude_same_classid(results):
         else:
             pass
 
-    filtered_results = []
     for temp_result in temp_results:
         if temp_result.classid != None:
             filtered_results.append(temp_result)

@@ -52,6 +52,14 @@ struct RadarMarkProgress {
     int mark_standard_5_progress;
     int mark_sentry_progress;
 };
+struct IfRadarMark {
+    bool if_mark_hero;
+    bool if_mark_engineer;
+    bool if_mark_standard_3;
+    bool if_mark_standard_4;
+    bool if_mark_standard_5;
+    bool if_mark_sentry;
+};
 
 class Radar_decisioner {
 public:
@@ -63,8 +71,11 @@ public:
         radar_information_ = Radar_information {
             friend_side, GameState::NOT_START, -1, 400, false, false, 0, 0
         };
-        radar_mark_progress = RadarMarkProgress {
+        radar_mark_progress_ = RadarMarkProgress {
             0, 0, 0, 0, 0, 0
+        };
+        if_radar_mark_ = IfRadarMark {
+            false, false, false, false, false, false
         };
         enable_double_debuff_by = Enable_double_debuff_by { 0, 0 };
         logger->INFO("[√]initialized game status receive node.");
@@ -111,8 +122,10 @@ public:
             update_game_status();
         if (command_id == 0x0003)
             update_sentry_hp();
-        if (command_id == 0x020C)
+        if (command_id == 0x020C) {
+            if_radar_mark_ = IfRadarMark { false, false, false, false, false, false };
             update_mark_progress();
+        }
         if (command_id == 0x020E)
             update_radar_info();
     }
@@ -145,7 +158,15 @@ public:
     void update_mark_progress()
     {
         auto& data = reinterpret_cast<package::receive::RadarMarkProgress&>(frame_.body.data);
-        radar_mark_progress = RadarMarkProgress {
+        if_radar_mark_ = IfRadarMark {
+            data.mark_hero_progress > radar_mark_progress_.mark_hero_progress,
+            data.mark_engineer_progress > radar_mark_progress_.mark_engineer_progress,
+            data.mark_standard_3_progress > radar_mark_progress_.mark_standard_3_progress,
+            data.mark_standard_4_progress > radar_mark_progress_.mark_standard_4_progress,
+            data.mark_standard_5_progress > radar_mark_progress_.mark_standard_5_progress,
+            data.mark_sentry_progress > radar_mark_progress_.mark_sentry_progress
+        };
+        radar_mark_progress_ = RadarMarkProgress {
             data.mark_hero_progress,
             data.mark_engineer_progress,
             data.mark_standard_3_progress,
@@ -161,7 +182,8 @@ public:
 
     Radar_information radar_information_;
     Enable_double_debuff_by enable_double_debuff_by;
-    RadarMarkProgress radar_mark_progress;
+    RadarMarkProgress radar_mark_progress_;
+    IfRadarMark if_radar_mark_;
     Logger* logger;
 
 public:
