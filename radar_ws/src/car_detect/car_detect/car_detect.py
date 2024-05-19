@@ -117,7 +117,9 @@ def get_chassis_position(box):
     """
     p1, p2 = (float(box[0]), float(box[1])), (float(box[2]), float(box[3]))
     aver_x = int((p1[0] + p2[0]) / 2)
-    chassis_y = int(((p1[1] + p2[1]) / 2) + (abs(p1[1] - p2[1]) / 10) * 3)
+
+    max_y = p1[1] if (p1[1] > p2[1]) else p2[1]
+    chassis_y = int(max_y - ((abs(p1[1] - p2[1])/2) * (max_y / 2160.0)))
     return aver_x, chassis_y
 
 

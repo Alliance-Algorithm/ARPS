@@ -13,7 +13,6 @@ namespace Radar
     {
         public RawImage rawImage;//相机渲染的UI
         private WebCamTexture webCamTexture;
-        public string path = "Assets/Resources" + "/Camera_img.png";
 
         public int cameraSelect = 0;
         public int cameraHeight = 1440;
