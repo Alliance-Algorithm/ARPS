@@ -11,8 +11,9 @@
     "PLUGIN_LIBRARY": "./resources/userlib/libyologpu.so",
     "car_engine_file_path": "./resources/models/car_identfy.engine",
     "armor_engine_file_path": "./resources/models/armor_identfy.engine",
-    "video_path": "./resources/videos/2.mp4",
+    "video_path": "./resources/videos/test.mp4",
     "detect_log_path": "./resources/user_logs/detect.log",
     "serial_log_path": "./resources/user_logs/serial.log",
-    "serial_port": "/dev/ttyUSB0"
+    "delay_duration": 2,
+    "serial_port": "/dev/radar_serial_port"
 }

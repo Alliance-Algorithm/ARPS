@@ -41,6 +41,7 @@ struct Configs {
     int friend_side;
     std::string log_path;
     std::string serial_port;
+    float delay_duration;
 };
 /*
  * 串口数据格式 - 定位数据
@@ -110,8 +111,9 @@ public:
         }
         std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
         for (auto it : robot_positions) {
-            float time_duration = static_cast<float>(std::chrono::duration_cast<std::chrono::seconds>(now - it.second->time).count());
-            if (time_duration > 2) {
+            float time_duration = static_cast<float>(
+                std::chrono::duration_cast<std::chrono::seconds>(now - it.second->time).count());
+            if (time_duration > radar_serial_config_.delay_duration) {
                 it.second->position = std::nullopt;
             }
             if (it.second->position != std::nullopt) {
@@ -128,7 +130,7 @@ public:
     }
 };
 
-class Radar_serial_handler {
+class Serial_handler {
 public:
     Configs radar_serial_config_;
     std::map<float, std::string> categories_;
@@ -139,11 +141,11 @@ public:
     std::vector<map_robot_data_t> enemy_positions_;
 
     std::shared_ptr<serial::Serial> radar_serial_;
-    radar::Radar_decisioner radar_decisioner_;
+    radar::Decisioner radar_decisioner_;
     Enemy_robot_positions_processor enemy_robot_positions_processor;
 
 public:
-    Radar_serial_handler()
+    Serial_handler()
         : radar_serial_config_(read_config("./resources/config.json"))
         , categories_({ { 0, "CantIdentfy" }, { 1, "R_Hero" }, { 2, "R_Engineer" },
               { 3, "R_Solider_3" }, { 4, "R_Solider_4" }, { 5, "R_Solider_5" },
@@ -168,7 +170,7 @@ public:
             sleep(1);
         }
 
-        radar_decisioner_ = radar::Radar_decisioner(radar_serial_, &logger_, radar_serial_config_.friend_side);
+        radar_decisioner_ = radar::Decisioner(radar_serial_, &logger_, radar_serial_config_.friend_side);
     }
 
     Configs read_config(std::string filename)
@@ -183,6 +185,7 @@ public:
         config.friend_side = config_json["FRIEND_SIDE"].get<std::string>() == "RED" ? RED : BLUE;
         config.log_path = config_json["serial_log_path"].get<std::string>();
         config.serial_port = config_json["serial_port"].get<std::string>();
+        config.delay_duration = config_json["delay_duration"].get<float>();
         return config;
     }
 
@@ -269,11 +272,11 @@ public:
             // 串口数据发送
             radar_serial_->write(serial_data, sizeof(serial_data));
         }
-        enemy_positions_.clear();
     }
-    void resend_data(const std_msgs::msg::Float32MultiArray::SharedPtr msg)
+    void receivev_enemy_data(const std_msgs::msg::Float32MultiArray::SharedPtr msg)
     {
         try {
+            enemy_positions_.clear();
             logger_.INFO("-->Received data from car_detect(size:" + std::to_string(msg->data.size()) + ")");
 
             // 串口数据解析
@@ -309,13 +312,13 @@ public:
     MainProcess(std::string name)
         : Node(name)
     {
-        radar_serial_handler_ = std::make_unique<Radar_serial_handler>();
+        radar_serial_handler_ = std::make_unique<Serial_handler>();
         position_subscription_ = this->create_subscription<std_msgs::msg::Float32MultiArray>(
             "car_positions", 10, [this](const std_msgs::msg::Float32MultiArray::SharedPtr msg) {
-                radar_serial_handler_->resend_data(msg);
+                radar_serial_handler_->receivev_enemy_data(msg);
             });
         using namespace std::chrono_literals;
-        serial_handle_timer_ = this->create_wall_timer(2ms, [this]() { radar_serial_handler_->send_radar_cmd(); });
+        serial_handle_timer_ = this->create_wall_timer(10ms, [this]() { radar_serial_handler_->send_radar_cmd(); });
 
         if (radar_serial_handler_->debug_) {
             cv::namedWindow("minimap", 0);
@@ -327,7 +330,7 @@ public:
     }
 
 private:
-    std::unique_ptr<Radar_serial_handler> radar_serial_handler_;
+    std::unique_ptr<Serial_handler> radar_serial_handler_;
     // 声明订阅者
     std::shared_ptr<rclcpp::Subscription<std_msgs::msg::Float32MultiArray>> position_subscription_;
     std::shared_ptr<rclcpp::TimerBase> serial_handle_timer_;

@@ -28,7 +28,7 @@ enum class GameState {
     SETTLING
 };
 
-struct Radar_information {
+struct GameInformation {
     int friend_Side;
     GameState gamestate;
     int time_remain;
@@ -61,14 +61,14 @@ struct IfRadarMark {
     bool if_mark_sentry;
 };
 
-class Radar_decisioner {
+class Decisioner {
 public:
-    Radar_decisioner() {};
-    Radar_decisioner(std::shared_ptr<serial::Serial> serial, Logger* logger, int friend_side)
+    Decisioner() {};
+    Decisioner(std::shared_ptr<serial::Serial> serial, Logger* logger, int friend_side)
         : radar_serial_(serial)
-        , logger(logger)
+        , logger_(logger)
     {
-        radar_information_ = Radar_information {
+        radar_information_ = GameInformation {
             friend_side, GameState::NOT_START, -1, 400, false, false, 0, 0
         };
         radar_mark_progress_ = RadarMarkProgress {
@@ -77,7 +77,7 @@ public:
         if_radar_mark_ = IfRadarMark {
             false, false, false, false, false, false
         };
-        enable_double_debuff_by = Enable_double_debuff_by { 0, 0 };
+        enable_double_debuff_by_ = Enable_double_debuff_by { 0, 0 };
         logger->INFO("[√]initialized game status receive node.");
     };
 
@@ -96,7 +96,7 @@ public:
                 if (serial_util::dji_crc::verify_crc16(&frame_, frame_size)) {
                     process_frame_info();
                 } else {
-                    logger->WARNING("Body crc16 invalid");
+                    logger_->WARNING("Body crc16 invalid");
                 }
             }
         } else {
@@ -107,9 +107,9 @@ public:
                     return serial_util::dji_crc::verify_crc8(header);
                 });
             if (result == serial_util::ReceiveResult::HEADER_INVAILD) {
-                logger->WARNING("Header start invalid");
+                logger_->WARNING("Header start invalid");
             } else if (result == serial_util::ReceiveResult::VERIFY_INVAILD) {
-                logger->WARNING("Header crc8 invalid");
+                logger_->WARNING("Header crc8 invalid");
             }
         }
         make_decision();
@@ -180,11 +180,11 @@ public:
     std::shared_ptr<serial::Serial> radar_serial_;
     size_t cache_size_ = 0;
 
-    Radar_information radar_information_;
-    Enable_double_debuff_by enable_double_debuff_by;
+    GameInformation radar_information_;
+    Enable_double_debuff_by enable_double_debuff_by_;
     RadarMarkProgress radar_mark_progress_;
     IfRadarMark if_radar_mark_;
-    Logger* logger;
+    Logger* logger_;
 
 public:
     void make_decision()
@@ -193,36 +193,36 @@ public:
 
         // reset status if game not start
         if (radar_information_.gamestate == GameState::SETTLING) {
-            logger->INFO(">>>>>Game state:END\nReset values.");
+            logger_->INFO(">>>>>Game state:END\nReset values.");
             radar_information_.enemy_sentry_hp = 400;
             radar_information_.double_debuff_cmd = 0;
             radar_information_.enable_double_debuff = false;
-            enable_double_debuff_by.big_buff = false;
-            enable_double_debuff_by.enemy_sentry = false;
+            enable_double_debuff_by_.big_buff = false;
+            enable_double_debuff_by_.enemy_sentry = false;
         }
         // if double debuff is enabled,do nothing
         if (radar_information_.if_double_debuff_enabled)
             return;
         if (radar_information_.gamestate == GameState::STARTED) {
-            if (radar_information_.enemy_sentry_hp < 380 && !enable_double_debuff_by.enemy_sentry) {
+            if (radar_information_.enemy_sentry_hp < 380 && !enable_double_debuff_by_.enemy_sentry) {
                 radar_information_.enable_double_debuff = true;
-                enable_double_debuff_by.enemy_sentry = true;
+                enable_double_debuff_by_.enemy_sentry = true;
             }
 
-            if (radar_information_.if_active_big_buff && !enable_double_debuff_by.big_buff) {
+            if (radar_information_.if_active_big_buff && !enable_double_debuff_by_.big_buff) {
                 sleep(5);
                 radar_information_.enable_double_debuff = true;
-                enable_double_debuff_by.big_buff = true;
+                enable_double_debuff_by_.big_buff = true;
             }
         }
 
         if (radar_information_.time_remain < 30 && radar_information_.double_debuff_cmd < 2) {
-            enable_double_debuff_by.big_buff = true;
+            enable_double_debuff_by_.big_buff = true;
         }
 
         if (radar_information_.enable_double_debuff) {
             radar_information_.double_debuff_cmd++;
-            logger->INFO("--->Changed cmd id: " + std::to_string(radar_information_.double_debuff_cmd));
+            logger_->INFO("--->Changed cmd id: " + std::to_string(radar_information_.double_debuff_cmd));
         }
     };
 };
