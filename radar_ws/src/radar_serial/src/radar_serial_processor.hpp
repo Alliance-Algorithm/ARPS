@@ -2,20 +2,25 @@
 
 #include "Logger.hpp"
 #include "nlohmann/json.hpp"
-#include "radar_cmd.hpp"
+#include "radar_decisionmaker.hpp"
 
-#include <chrono>
-#include <ctime>
-#include <memory>
-#include <optional>
+#include <rcl/event.h>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/timer.hpp>
 #include <std_msgs/msg/float32_multi_array.hpp>
 
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <ctime>
 #include <map>
+#include <memory>
+#include <optional>
+#include <string>
+#include <unistd.h>
+#include <utility>
+#include <vector>
 
 #include <opencv2/core.hpp>
 #include <opencv2/core/types.hpp>
@@ -24,13 +29,8 @@
 #include <opencv4/opencv2/core/mat.hpp>
 #include <opencv4/opencv2/opencv.hpp>
 
-#include <rcl/event.h>
 #include <serial/serial.h>
 #include <serial_util/crc/dji_crc.hpp>
-#include <string>
-#include <unistd.h>
-#include <utility>
-#include <vector>
 
 using json = nlohmann::json;
 
@@ -141,7 +141,7 @@ public:
     std::vector<map_robot_data_t> enemy_positions_;
 
     std::shared_ptr<serial::Serial> radar_serial_;
-    radar::Decisioner radar_decisioner_;
+    radar::DecisionMaker radar_decisioner_;
     Enemy_robot_positions_processor enemy_robot_positions_processor;
 
 public:
@@ -170,7 +170,7 @@ public:
             sleep(1);
         }
 
-        radar_decisioner_ = radar::Decisioner(radar_serial_, &logger_, radar_serial_config_.friend_side);
+        radar_decisioner_ = radar::DecisionMaker(radar_serial_, &logger_, radar_serial_config_.friend_side);
     }
 
     Configs read_config(std::string filename)

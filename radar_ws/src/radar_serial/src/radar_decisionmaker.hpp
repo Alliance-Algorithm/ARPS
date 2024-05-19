@@ -4,6 +4,8 @@
 #include "receive.hpp"
 
 #include <bitset>
+#include <string>
+#include <unistd.h>
 
 #include <opencv2/core.hpp>
 
@@ -11,14 +13,12 @@
 #include <serial_util/crc/dji_crc.hpp>
 #include <serial_util/package_receive.hpp>
 
-#include <string>
-#include <unistd.h>
-
 #define RED 100
 #define BLUE 101
 
 namespace radar {
 
+// 比赛状态
 enum class GameState {
     NOT_START,
     PREPARATION,
@@ -28,6 +28,17 @@ enum class GameState {
     SETTLING
 };
 
+/* - 比赛信息 - ;
+   己方颜色  friend_Side;
+   比赛状态  gamestate;
+   剩余时间  time_remain;
+   敌方哨兵血量  enemy_sentry_hp;
+   是否激活大能量机关  if_active_big_buff;
+   是否已开启双倍易伤  if_double_debuff_enabled;
+   可用双倍易伤次数 double_debuff_chances;
+   开启双倍易伤  enable_double_debuff;
+   雷达决策命令  double_debuff_cmd;
+ */
 struct GameInformation {
     int friend_Side;
     GameState gamestate;
@@ -37,6 +48,7 @@ struct GameInformation {
     bool if_active_big_buff;
     bool if_double_debuff_enabled;
 
+    int double_debuff_chances;
     bool enable_double_debuff;
     int double_debuff_cmd;
 };
@@ -61,15 +73,15 @@ struct IfRadarMark {
     bool if_mark_sentry;
 };
 
-class Decisioner {
+class DecisionMaker {
 public:
-    Decisioner() {};
-    Decisioner(std::shared_ptr<serial::Serial> serial, Logger* logger, int friend_side)
+    DecisionMaker() {};
+    DecisionMaker(std::shared_ptr<serial::Serial> serial, Logger* logger, int friend_side)
         : radar_serial_(serial)
         , logger_(logger)
     {
         radar_information_ = GameInformation {
-            friend_side, GameState::NOT_START, -1, 400, false, false, 0, 0
+            friend_side, GameState::NOT_START, -1, 400, false, false, 0, 0, 0
         };
         radar_mark_progress_ = RadarMarkProgress {
             0, 0, 0, 0, 0, 0
@@ -131,6 +143,7 @@ public:
         if (command_id == 0x020E)
             update_radar_info();
     }
+
     void update_game_status()
     {
         auto& data = reinterpret_cast<package::receive::GameStatus&>(frame_.body.data);
@@ -145,7 +158,6 @@ public:
         radar_information_.enemy_sentry_hp = radar_information_.friend_Side == RED ? data.blue_7 : data.red_7;
         // logger_->INFO("receive enemy sentry hp:" + std::to_string(radar_information_.enemy_sentry_hp));
     };
-
     void update_buff_info()
     {
         auto& data = reinterpret_cast<package::receive::EventData&>(frame_.body.data);
@@ -153,15 +165,29 @@ public:
         radar_information_.if_active_big_buff = static_cast<bool>(event_info_val[5]);
         // logger_->INFO("receive big buff info:" + std::to_string(radar_information_.if_active_big_buff));
     };
-
     void update_radar_info()
     {
         auto& data = reinterpret_cast<package::receive::RadarInfo&>(frame_.body.data);
         std::bitset<8> radar_info_val(data.radar_info);
+
+        int current_double_debuff_chances;
+        if (radar_info_val[0] == 0 && radar_info_val[1] == 0) {
+            current_double_debuff_chances = 0;
+        } else {
+            if (radar_info_val[0] == 1) {
+                current_double_debuff_chances = 2;
+            } else {
+                current_double_debuff_chances = 1;
+            }
+        }
+        if (current_double_debuff_chances > radar_information_.double_debuff_chances) {
+            logger_->INFO("Double debuff chances add:" + std::to_string(radar_information_.double_debuff_chances));
+        }
+        radar_information_.double_debuff_chances = current_double_debuff_chances;
+
         radar_information_.if_double_debuff_enabled = static_cast<bool>(radar_info_val[2]);
         // logger_->INFO("receive if enable doublebuff info:" + std::to_string(radar_information_.if_double_debuff_enabled));
     };
-
     void update_mark_progress()
     {
         auto& data = reinterpret_cast<package::receive::RadarMarkProgress&>(frame_.body.data);
@@ -200,9 +226,12 @@ public:
         radar_information_.enable_double_debuff = false;
 
         // reset status if game not start
-        if (radar_information_.gamestate == GameState::SETTLING) {
+        if (radar_information_.gamestate == GameState::SETTLING || radar_information_.gamestate == GameState::COUNTDOWN) {
             radar_information_.enemy_sentry_hp = 400;
+            radar_information_.if_active_big_buff = false;
+            radar_information_.if_double_debuff_enabled = false;
             radar_information_.double_debuff_cmd = 0;
+            radar_information_.double_debuff_chances = 0;
             radar_information_.enable_double_debuff = false;
             enable_double_debuff_by_.big_buff = false;
             enable_double_debuff_by_.enemy_sentry = false;

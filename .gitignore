@@ -14,7 +14,7 @@ build/
 *.mp4
 *.log
 log/
-*.onnx
+*.engine
 unity_node/
 .cache/
 .vscode/
