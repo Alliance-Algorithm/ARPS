@@ -5,7 +5,7 @@
     "LEN_ONE_RESULT": 38,
     "VIDEO_STREAM_MODE": "VIDEO",
     "DETECT_DEBUG": "true",
-    "SERIAL_DEBUG": "true",
+    "SERIAL_DEBUG": "false",
     "FRIEND_SIDE": "BLUE",
     "publish_topic": "detect_result",
     "PLUGIN_LIBRARY": "./resources/userlib/libyologpu.so",

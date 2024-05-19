@@ -126,6 +126,8 @@ public:
             if_radar_mark_ = IfRadarMark { false, false, false, false, false, false };
             update_mark_progress();
         }
+        if (command_id == 0x0101)
+            update_buff_info();
         if (command_id == 0x020E)
             update_radar_info();
     }
@@ -134,11 +136,14 @@ public:
         auto& data = reinterpret_cast<package::receive::GameStatus&>(frame_.body.data);
         radar_information_.gamestate = static_cast<GameState>(data.game_stage);
         radar_information_.time_remain = static_cast<int>(data.stage_remain_time);
+        logger_->INFO("receive gamestate:" + std::to_string(static_cast<int>(radar_information_.gamestate))
+            + "|time_remain:" + std::to_string(radar_information_.time_remain));
     };
     void update_sentry_hp()
     {
         auto& data = reinterpret_cast<package::receive::GameRobotHp&>(frame_.body.data);
         radar_information_.enemy_sentry_hp = radar_information_.friend_Side == RED ? data.blue_7 : data.red_7;
+        // logger_->INFO("receive enemy sentry hp:" + std::to_string(radar_information_.enemy_sentry_hp));
     };
 
     void update_buff_info()
@@ -146,6 +151,7 @@ public:
         auto& data = reinterpret_cast<package::receive::EventData&>(frame_.body.data);
         std::bitset<32> event_info_val(data.event_data);
         radar_information_.if_active_big_buff = static_cast<bool>(event_info_val[5]);
+        // logger_->INFO("receive big buff info:" + std::to_string(radar_information_.if_active_big_buff));
     };
 
     void update_radar_info()
@@ -153,6 +159,7 @@ public:
         auto& data = reinterpret_cast<package::receive::RadarInfo&>(frame_.body.data);
         std::bitset<8> radar_info_val(data.radar_info);
         radar_information_.if_double_debuff_enabled = static_cast<bool>(radar_info_val[2]);
+        // logger_->INFO("receive if enable doublebuff info:" + std::to_string(radar_information_.if_double_debuff_enabled));
     };
 
     void update_mark_progress()
@@ -174,6 +181,7 @@ public:
             data.mark_standard_5_progress,
             data.mark_sentry_progress
         };
+        // logger_->INFO("receive mark info");
     }
 
     package::receive::Frame frame_;
@@ -193,7 +201,6 @@ public:
 
         // reset status if game not start
         if (radar_information_.gamestate == GameState::SETTLING) {
-            logger_->INFO(">>>>>Game state:END\nReset values.");
             radar_information_.enemy_sentry_hp = 400;
             radar_information_.double_debuff_cmd = 0;
             radar_information_.enable_double_debuff = false;
@@ -216,11 +223,11 @@ public:
             }
         }
 
-        if (radar_information_.time_remain < 30 && radar_information_.double_debuff_cmd < 2) {
-            enable_double_debuff_by_.big_buff = true;
+        if (radar_information_.time_remain < 30 && radar_information_.gamestate == GameState::STARTED) {
+            radar_information_.enable_double_debuff = true;
         }
 
-        if (radar_information_.enable_double_debuff) {
+        if (radar_information_.enable_double_debuff && radar_information_.double_debuff_cmd < 2) {
             radar_information_.double_debuff_cmd++;
             logger_->INFO("--->Changed cmd id: " + std::to_string(radar_information_.double_debuff_cmd));
         }
