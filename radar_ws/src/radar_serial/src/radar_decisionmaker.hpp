@@ -174,24 +174,19 @@ public:
     void update_radar_info()
     {
         auto& data = reinterpret_cast<package::receive::RadarInfo&>(frame_.body.data);
-        std::bitset<8> radar_info_val(data.radar_info);
 
-        int current_double_debuff_chances;
-        if (radar_info_val[0] == 0 && radar_info_val[1] == 0) {
-            current_double_debuff_chances = 0;
-        } else {
-            if (radar_info_val[0] == 1) {
-                current_double_debuff_chances = 2;
-            } else {
-                current_double_debuff_chances = 1;
-            }
-        }
+        auto bit_0 = (data.radar_info >> 7) % 2;
+        auto bit_1 = (data.radar_info >> 6) % 2;
+        auto bit_2 = (data.radar_info >> 5) % 2;
+
+        int current_double_debuff_chances = bit_0 * 2 + bit_1;
+
         if (current_double_debuff_chances > radar_information_.double_debuff_chances) {
             logger_->INFO("Double debuff chances add:" + std::to_string(radar_information_.double_debuff_chances));
         }
         radar_information_.double_debuff_chances = current_double_debuff_chances;
 
-        radar_information_.if_double_debuff_enabled = static_cast<bool>(radar_info_val[2]);
+        radar_information_.if_double_debuff_enabled = static_cast<bool>(bit_2);
         // logger_->INFO("receive if enable doublebuff info:" + std::to_string(radar_information_.if_double_debuff_enabled));
     };
     void update_mark_progress()
@@ -218,20 +213,14 @@ public:
     void update_dart_info()
     {
         auto& data = reinterpret_cast<package::receive::DartInfo&>(frame_.body.data);
-        std::bitset<8> dart_info_val(data.dart_info);
-        radar_information_.dart_change = false;
 
-        int current_dart_target = radar_information_.dart_target;
-        if (dart_info_val[5] == 0 && dart_info_val[6] == 0) {
-            current_dart_target = 0;
-        } else {
-            if (dart_info_val[5] == 1) {
-                current_dart_target = 2;
-            } else {
-                current_dart_target = 1;
-            }
-        }
-        if (current_dart_target != radar_information_.dart_target)
+        auto bit_5 = (data.dart_info >> 11) % 2;
+        auto bit_6 = (data.dart_info >> 10) % 2;
+
+        auto last_dart_target = radar_information_.dart_target;
+        radar_information_.dart_target = 2 * bit_5 + bit_6;
+
+        if (last_dart_target != radar_information_.dart_target)
             radar_information_.dart_change = true;
     }
 
@@ -248,8 +237,6 @@ public:
 public:
     void make_decision()
     {
-        radar_information_.enable_double_debuff = false;
-
         // reset status if game not start
         if (radar_information_.gamestate == GameState::SETTLING || radar_information_.gamestate == GameState::COUNTDOWN) {
             radar_information_.enemy_sentry_hp = 400;
@@ -281,6 +268,7 @@ public:
 
         if (radar_information_.dart_change) {
             radar_information_.enable_double_debuff = true;
+            logger_->INFO("-->dart change");
         }
 
         if (radar_information_.time_remain < 30 && radar_information_.gamestate == GameState::STARTED) {
@@ -291,6 +279,9 @@ public:
             radar_information_.double_debuff_cmd++;
             logger_->INFO("--->Changed cmd id: " + std::to_string(radar_information_.double_debuff_cmd));
         }
+
+        radar_information_.dart_change = false;
+        radar_information_.enable_double_debuff = false;
     };
 };
 
