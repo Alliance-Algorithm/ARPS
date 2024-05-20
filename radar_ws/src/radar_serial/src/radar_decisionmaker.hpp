@@ -36,6 +36,7 @@ enum class GameState {
    是否激活大能量机关  if_active_big_buff;
    是否已开启双倍易伤  if_double_debuff_enabled;
    可用双倍易伤次数 double_debuff_chances;
+   飞镖目标 dart_target
    开启双倍易伤  enable_double_debuff;
    雷达决策命令  double_debuff_cmd;
  */
@@ -51,6 +52,9 @@ struct GameInformation {
     int double_debuff_chances;
     bool enable_double_debuff;
     int double_debuff_cmd;
+
+    int dart_target;
+    bool dart_change;
 };
 struct Enable_double_debuff_by {
     bool enemy_sentry;
@@ -81,7 +85,7 @@ public:
         , logger_(logger)
     {
         radar_information_ = GameInformation {
-            friend_side, GameState::NOT_START, -1, 400, false, false, 0, 0, 0
+            friend_side, GameState::NOT_START, -1, 400, false, false, 0, 0, 0, 0, false
         };
         radar_mark_progress_ = RadarMarkProgress {
             0, 0, 0, 0, 0, 0
@@ -132,16 +136,18 @@ public:
         auto command_id = frame_.body.command_id;
         if (command_id == 0x0001)
             update_game_status();
-        if (command_id == 0x0003)
-            update_sentry_hp();
-        if (command_id == 0x020C) {
-            if_radar_mark_ = IfRadarMark { false, false, false, false, false, false };
-            update_mark_progress();
-        }
-        if (command_id == 0x0101)
-            update_buff_info();
-        if (command_id == 0x020E)
-            update_radar_info();
+        // if (command_id == 0x0003)
+        //     update_sentry_hp();
+        // if (command_id == 0x020C) {
+        //     if_radar_mark_ = IfRadarMark { false, false, false, false, false, false };
+        //     update_mark_progress();
+        // }
+        // if (command_id == 0x0101)
+        //     update_buff_info();
+        // if (command_id == 0x020E)
+        //     update_radar_info();
+        if (command_id == 0x0105)
+            update_dart_info();
     }
 
     void update_game_status()
@@ -209,6 +215,25 @@ public:
         };
         // logger_->INFO("receive mark info");
     }
+    void update_dart_info()
+    {
+        auto& data = reinterpret_cast<package::receive::DartInfo&>(frame_.body.data);
+        std::bitset<8> dart_info_val(data.dart_info);
+        radar_information_.dart_change = false;
+
+        int current_dart_target = radar_information_.dart_target;
+        if (dart_info_val[5] == 0 && dart_info_val[6] == 0) {
+            current_dart_target = 0;
+        } else {
+            if (dart_info_val[5] == 1) {
+                current_dart_target = 2;
+            } else {
+                current_dart_target = 1;
+            }
+        }
+        if (current_dart_target != radar_information_.dart_target)
+            radar_information_.dart_change = true;
+    }
 
     package::receive::Frame frame_;
     std::shared_ptr<serial::Serial> radar_serial_;
@@ -232,24 +257,30 @@ public:
             radar_information_.if_double_debuff_enabled = false;
             radar_information_.double_debuff_cmd = 0;
             radar_information_.double_debuff_chances = 0;
+            radar_information_.dart_target = 0;
             radar_information_.enable_double_debuff = false;
+            radar_information_.dart_change = false;
             enable_double_debuff_by_.big_buff = false;
             enable_double_debuff_by_.enemy_sentry = false;
         }
         // if double debuff is enabled,do nothing
         if (radar_information_.if_double_debuff_enabled)
             return;
-        if (radar_information_.gamestate == GameState::STARTED) {
-            if (radar_information_.enemy_sentry_hp < 380 && !enable_double_debuff_by_.enemy_sentry) {
-                radar_information_.enable_double_debuff = true;
-                enable_double_debuff_by_.enemy_sentry = true;
-            }
+        // if (radar_information_.gamestate == GameState::STARTED) {
+        //     if (radar_information_.enemy_sentry_hp < 380 && !enable_double_debuff_by_.enemy_sentry) {
+        //         radar_information_.enable_double_debuff = true;
+        //         enable_double_debuff_by_.enemy_sentry = true;
+        //     }
 
-            if (radar_information_.if_active_big_buff && !enable_double_debuff_by_.big_buff) {
-                sleep(5);
-                radar_information_.enable_double_debuff = true;
-                enable_double_debuff_by_.big_buff = true;
-            }
+        //     if (radar_information_.if_active_big_buff && !enable_double_debuff_by_.big_buff) {
+        //         sleep(5);
+        //         radar_information_.enable_double_debuff = true;
+        //         enable_double_debuff_by_.big_buff = true;
+        //     }
+        // }
+
+        if (radar_information_.dart_change) {
+            radar_information_.enable_double_debuff = true;
         }
 
         if (radar_information_.time_remain < 30 && radar_information_.gamestate == GameState::STARTED) {

@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <sys/cdefs.h>
 
 namespace package::receive {
 
@@ -65,6 +66,10 @@ struct __attribute__((packed)) RadarMarkProgress {
     uint8_t mark_standard_4_progress;
     uint8_t mark_standard_5_progress;
     uint8_t mark_sentry_progress;
+};
+struct __attribute__((packed)) DartInfo {
+    uint8_t dart_remaining_time;
+    uint16_t dart_info;
 };
 
 } // namespace package::receive
