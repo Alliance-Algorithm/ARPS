@@ -277,7 +277,7 @@ public:
     {
         try {
             enemy_positions_.clear();
-            logger_.INFO("-->Received data from car_detect(size:" + std::to_string(msg->data.size()) + ")");
+            // logger_.INFO("-->Received data from car_detect(size:" + std::to_string(msg->data.size()) + ")");
 
             // 串口数据解析
             if (msg->data.size() != 0) {

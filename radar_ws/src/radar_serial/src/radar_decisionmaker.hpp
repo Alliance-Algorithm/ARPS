@@ -4,6 +4,8 @@
 #include "receive.hpp"
 
 #include <bitset>
+#include <rclcpp/logger.hpp>
+#include <rclcpp/logging.hpp>
 #include <string>
 #include <unistd.h>
 
@@ -134,18 +136,21 @@ public:
     void process_frame_info()
     {
         auto command_id = frame_.body.command_id;
+        logger_->INFO("command_id: " + std::to_string(command_id));
+        RCLCPP_INFO(rclcpp::get_logger("Referee serial info"), "%s", frame_.body.data);
+
         if (command_id == 0x0001)
             update_game_status();
-        // if (command_id == 0x0003)
-        //     update_sentry_hp();
-        // if (command_id == 0x020C) {
-        //     if_radar_mark_ = IfRadarMark { false, false, false, false, false, false };
-        //     update_mark_progress();
-        // }
-        // if (command_id == 0x0101)
-        //     update_buff_info();
-        // if (command_id == 0x020E)
-        //     update_radar_info();
+        if (command_id == 0x0003)
+            update_sentry_hp();
+        if (command_id == 0x020C) {
+            if_radar_mark_ = IfRadarMark { false, false, false, false, false, false };
+            update_mark_progress();
+        }
+        if (command_id == 0x0101)
+            update_buff_info();
+        if (command_id == 0x020E)
+            update_radar_info();
         if (command_id == 0x0105)
             update_dart_info();
     }
@@ -162,14 +167,14 @@ public:
     {
         auto& data = reinterpret_cast<package::receive::GameRobotHp&>(frame_.body.data);
         radar_information_.enemy_sentry_hp = radar_information_.friend_Side == RED ? data.blue_7 : data.red_7;
-        // logger_->INFO("receive enemy sentry hp:" + std::to_string(radar_information_.enemy_sentry_hp));
+        logger_->INFO("receive enemy sentry hp:" + std::to_string(radar_information_.enemy_sentry_hp));
     };
     void update_buff_info()
     {
         auto& data = reinterpret_cast<package::receive::EventData&>(frame_.body.data);
         std::bitset<32> event_info_val(data.event_data);
         radar_information_.if_active_big_buff = static_cast<bool>(event_info_val[5]);
-        // logger_->INFO("receive big buff info:" + std::to_string(radar_information_.if_active_big_buff));
+        logger_->INFO("receive big buff info:" + std::to_string(radar_information_.if_active_big_buff));
     };
     void update_radar_info()
     {
@@ -187,7 +192,7 @@ public:
         radar_information_.double_debuff_chances = current_double_debuff_chances;
 
         radar_information_.if_double_debuff_enabled = static_cast<bool>(bit_2);
-        // logger_->INFO("receive if enable doublebuff info:" + std::to_string(radar_information_.if_double_debuff_enabled));
+        logger_->INFO("receive if enable doublebuff info:" + std::to_string(radar_information_.if_double_debuff_enabled));
     };
     void update_mark_progress()
     {
@@ -278,6 +283,7 @@ public:
         if (radar_information_.enable_double_debuff && radar_information_.double_debuff_cmd < 2) {
             radar_information_.double_debuff_cmd++;
             logger_->INFO("--->Changed cmd id: " + std::to_string(radar_information_.double_debuff_cmd));
+            radar_information_.if_double_debuff_enabled = true;
         }
 
         radar_information_.dart_change = false;
