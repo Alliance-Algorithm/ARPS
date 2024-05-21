@@ -119,7 +119,7 @@ def get_chassis_position(box):
     aver_x = int((p1[0] + p2[0]) / 2)
 
     max_y = p1[1] if (p1[1] > p2[1]) else p2[1]
-    chassis_y = int(max_y - ((abs(p1[1] - p2[1])/2) * (max_y / 2160.0)))
+    chassis_y = int(max_y - ((abs(p1[1] - p2[1])*0.4) * (max_y / 2160.0)))
     return aver_x, chassis_y
 
 
@@ -147,6 +147,15 @@ def plot_one_box(x, img, side=None, label=None, line_thickness=None):
         color = (255, 50, 50)
     c1, c2 = (int(x[0]), int(x[1])), (int(x[2]), int(x[3]))
     cv2.rectangle(img, c1, c2, color, thickness=tl, lineType=cv2.LINE_AA)
+
+
+    p1, p2 = (float(x[0]), float(x[1])), (float(x[2]), float(x[3]))
+    aver_x = int((p1[0] + p2[0]) / 2)
+    max_y = p1[1] if (p1[1] > p2[1]) else p2[1]
+    chassis_y = int(max_y - ((abs(p1[1] - p2[1])*0.4) * (max_y / 2160.0)))
+
+    cv2.circle(img,(aver_x,chassis_y),15,(20,255,20),3)
+    cv2.circle(img,(aver_x,chassis_y),5,(20,255,20),-1)
 
     if label:
         tf = max(tl - 1, 1)  # font thickness

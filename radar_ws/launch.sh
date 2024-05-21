@@ -1,11 +1,11 @@
 #! /bin/zsh
 
 echo "=======LAUNCH-PROGRESS=======" && \
-echo ">>>Refresh log files" && \
-rm -f ./resources/user_logs/*
-touch ./resources/user_logs/detect.log
-touch ./resources/user_logs/serial.log
-echo "[√]Done"
+# echo ">>>Refresh log files" && \
+# rm -f ./resources/user_logs/*
+# touch ./resources/user_logs/detect.log
+# touch ./resources/user_logs/serial.log
+# echo "[√]Done"
 
 echo ">>>source /opt/ros/humble/setup.zsh" && \
 source /opt/ros/humble/setup.zsh
