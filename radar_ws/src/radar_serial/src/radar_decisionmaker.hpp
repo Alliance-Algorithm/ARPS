@@ -78,17 +78,15 @@ public:
     void process_frame_info()
     {
         auto command_id = frame_.body.command_id;
-        logger_->INFO("command_id: " + std::to_string(command_id));
-        RCLCPP_INFO(rclcpp::get_logger("Referee serial info"), "%s", frame_.body.data);
+        RCLCPP_INFO(rclcpp::get_logger("Referee serial"), "Referee command id: %x", command_id);
+        RCLCPP_INFO(rclcpp::get_logger("Radar cmd"), "Radar CMD: %d", radar_information_.double_debuff_cmd);
 
         if (command_id == 0x0001)
             update_game_status();
         if (command_id == 0x0003)
             update_sentry_hp();
-        if (command_id == 0x020C) {
-            if_radar_mark_ = IfRadarMark { false, false, false, false, false, false };
+        if (command_id == 0x020C)
             update_mark_progress();
-        }
         if (command_id == 0x0101)
             update_buff_info();
         if (command_id == 0x020E)
@@ -102,7 +100,7 @@ public:
         auto& data = reinterpret_cast<package::receive::GameStatus&>(frame_.body.data);
         radar_information_.gamestate = static_cast<GameState>(data.game_stage);
         radar_information_.time_remain = static_cast<int>(data.stage_remain_time);
-        logger_->INFO("receive gamestate:" + std::to_string(static_cast<int>(radar_information_.gamestate))
+        logger_->INFO("---> receive gamestate:" + std::to_string(static_cast<int>(radar_information_.gamestate))
             + "|time_remain:" + std::to_string(radar_information_.time_remain));
     };
     void update_sentry_hp()
@@ -138,6 +136,8 @@ public:
     };
     void update_mark_progress()
     {
+        if_radar_mark_ = IfRadarMark { false, false, false, false, false, false };
+
         auto& data = reinterpret_cast<package::receive::RadarMarkProgress&>(frame_.body.data);
         if_radar_mark_ = IfRadarMark {
             data.mark_hero_progress > radar_mark_progress_.mark_hero_progress,
@@ -166,9 +166,11 @@ public:
 
         auto last_dart_target = radar_information_.dart_target;
         radar_information_.dart_target = 2 * bit_5 + bit_6;
+        logger_->INFO("receive dart target: " + std::to_string(radar_information_.dart_target));
 
-        if (last_dart_target != radar_information_.dart_target)
-            radar_information_.dart_change = true;
+        if (last_dart_target != radar_information_.dart_target && radar_information_.gamestate == GameState::STARTED)
+            radar_information_.dart_change
+                = true;
     }
 
     package::receive::Frame frame_;
@@ -219,7 +221,12 @@ public:
             logger_->INFO("-->dart change");
         }
 
-        if (radar_information_.time_remain < 50 && radar_information_.gamestate == GameState::STARTED) {
+        if (radar_information_.time_remain < 60 && radar_information_.gamestate == GameState::STARTED) {
+            radar_information_.enable_double_debuff = true;
+        }
+        if (((radar_information_.time_remain <= 200 && radar_information_.time_remain > 198)
+                && radar_information_.gamestate == GameState::STARTED)
+            && radar_information_.double_debuff_cmd < 1) {
             radar_information_.enable_double_debuff = true;
         }
 
@@ -231,7 +238,7 @@ public:
 
         radar_information_.dart_change = false;
         radar_information_.enable_double_debuff = false;
-        // radar_information_.if_double_debuff_enabled = true;
+        radar_information_.if_double_debuff_enabled = true;
     };
 };
 
