@@ -8,7 +8,7 @@
 ```
 
 ```
-🚨ATTENTION: This repo is radar station class code of ROBOMASTER competition, not LiDAR related repo!! Please carefully scrrpo before fork!!
+🚨ATTENTION: This repo is radar station class code of ROBOMASTER competition, not LiDAR related repo!! Please carefully screen before fork!!
 ```
 
 ``` 🚨:注意：此仓库目前为开发版本，代码并不完全，请先不要部署，否则有很大概率出现项目文件缺失/跑不起来的状况 ```
