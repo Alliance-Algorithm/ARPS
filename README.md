@@ -1,6 +1,10 @@
 # Automatic Radar Positioning System
 > Alliance战队-雷达兵种项目文档
 
+
+
+``` 🚨:注意：此仓库为Robomaster比赛的雷达站兵种代码，并非激光雷达相关仓库！！请仔细甄别！！！ 
+🚨ATTENTION: This repo is radar station class code of ROBOMASTER competition, not LiDAR related repo!! Please carefully scrrpo before fork!!```
 ``` 🚨:注意：此仓库目前为开发版本，代码并不完全，请先不要部署，否则有很大概率出现项目文件缺失/跑不起来的状况 ```
 
 ## 概述
