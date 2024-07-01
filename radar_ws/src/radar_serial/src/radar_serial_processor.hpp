@@ -83,7 +83,7 @@ public:
         , logger_(logger)
 
     {
-        if (radar_serial_config_.friend_side == RED) {
+        if (radar_serial_config_.friend_side == BLUE) {
             for (int i = 1; i < 8; i++) {
                 robot_positions.insert(std::make_pair(i,
                     Status { std::nullopt, std::chrono::steady_clock::now() }));
@@ -98,6 +98,7 @@ public:
 
     std::vector<map_robot_data_t> update_positions(std::vector<map_robot_data_t> enemy_positions)
     {
+
         std::vector<map_robot_data_t> enemy_positions_processed;
 
         std::vector<int> avaliable_robots;
@@ -116,6 +117,21 @@ public:
             if (time_duration > radar_serial_config_.delay_duration) {
                 it.second->position = std::nullopt;
             }
+            if (it.second->position == std::nullopt) {
+                if (it.first == 1) {
+                    it.second->position = cv::Point2f(11.35, 15 - 0.85);
+                }
+                if (it.first == 7) {
+                    it.second->position = cv::Point2f(5.46, 15 - 7.34);
+                }
+                if (it.first == 101) {
+                    it.second->position = cv::Point2f(16.21, 15 - 13.86);
+                }
+                if (it.first == 107) {
+                    it.second->position = cv::Point2f(22.51, 15 - 8);
+                }
+            }
+
             if (it.second->position != std::nullopt) {
                 map_robot_data_t position;
                 position.target_robot_id = it.first;
@@ -142,7 +158,7 @@ public:
 
     std::shared_ptr<serial::Serial> radar_serial_;
     radar::DecisionMaker radar_decisioner_;
-    Enemy_robot_positions_processor enemy_robot_positions_processor;
+    Enemy_robot_positions_processor enemy_robot_positions_processor_;
 
 public:
     Serial_handler()
@@ -156,7 +172,7 @@ public:
         , logger_(Logger(Logger::file, Logger::debug, radar_serial_config_.log_path))
         , minimap_image_(cv::imread("./resources/images/RM2024Battlefield.png"))
         , radar_decisioner_()
-        , enemy_robot_positions_processor(radar_serial_config_, &logger_)
+        , enemy_robot_positions_processor_(radar_serial_config_, &logger_)
     {
         // 串口初始化
         while (true) {
@@ -253,7 +269,7 @@ public:
         serial_util::dji_crc::append_crc16(radar_decision_data);
         radar_serial_->write(radar_decision_data, sizeof(radar_decision_data));
 
-        std::vector<map_robot_data_t> enemy_positions_processed = enemy_robot_positions_processor.update_positions(enemy_positions_);
+        std::vector<map_robot_data_t> enemy_positions_processed = enemy_robot_positions_processor_.update_positions(enemy_positions_);
         if (debug_) {
             minimap_image_.copyTo(temp_map_);
 

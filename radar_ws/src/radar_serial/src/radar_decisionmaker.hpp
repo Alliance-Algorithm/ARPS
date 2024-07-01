@@ -125,7 +125,7 @@ public:
         auto bit_2 = (data.radar_info >> 5) % 2;
 
         int current_double_debuff_chances = bit_0 * 2 + bit_1;
-
+        logger_->INFO("receive double debuff chances: " + std::to_string(current_double_debuff_chances));
         if (current_double_debuff_chances > radar_information_.double_debuff_chances) {
             logger_->INFO("Double debuff chances add:" + std::to_string(radar_information_.double_debuff_chances));
         }
@@ -216,15 +216,15 @@ public:
             }
         }
 
-        if (radar_information_.dart_change) {
-            radar_information_.enable_double_debuff = true;
-            logger_->INFO("-->dart change");
-        }
+        // if (radar_information_.dart_change) {
+        //     radar_information_.enable_double_debuff = true;
+        //     logger_->INFO("-->dart change");
+        // }
 
         if (radar_information_.time_remain < 60 && radar_information_.gamestate == GameState::STARTED) {
             radar_information_.enable_double_debuff = true;
         }
-        if (((radar_information_.time_remain <= 200 && radar_information_.time_remain > 198)
+        if (((radar_information_.time_remain <= 400 && radar_information_.time_remain > 398)
                 && radar_information_.gamestate == GameState::STARTED)
             && radar_information_.double_debuff_cmd < 1) {
             radar_information_.enable_double_debuff = true;
@@ -239,7 +239,7 @@ public:
         radar_information_.dart_change = false;
         radar_information_.enable_double_debuff = false;
         radar_information_.if_double_debuff_enabled = true;
+        radar_information_.double_debuff_cmd = 1;
     };
 };
-
 }
