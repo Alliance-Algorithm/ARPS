@@ -3,7 +3,7 @@
     "IOU_THRESHOLD": 0.4,
     "LEN_ALL_RESULT": 38001,
     "LEN_ONE_RESULT": 38,
-    "VIDEO_STREAM_MODE": "CAMERA",
+    "VIDEO_STREAM_MODE": "VIDEO",
     "DETECT_DEBUG": "true",
     "SERIAL_DEBUG": "true",
     "FRIEND_SIDE": "RED",
@@ -15,5 +15,5 @@
     "detect_log_path": "./resources/user_logs/detect.log",
     "serial_log_path": "./resources/user_logs/serial.log",
     "delay_duration": 2,
-    "serial_port": "/dev/radar_serial_port"
+    "serial_port": "/dev/ttyUSB0"
 }
