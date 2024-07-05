@@ -65,20 +65,20 @@ radar_ws
     │   ├── userlib              # GPU加速相关库
     │   └── config.json          # 项目配置文件 ***
     └── src             # ROS2包源代码目录
+        ├── detector          # 机器人检测器
+        ├── updater           # 雷达信息集散中心
         ├── ROS_TCP_Endpoint    # ROS TCP终端节点
-        ├── car_detect          # 车辆检测节点
-        ├── radar_bringup       # 雷达启动节点
-        ├── radar_serial        # 串口通信/小地图显示节点
+        ├── radar_bringup       # 启动节点
         ├── ros2_serial         # ROS2串口通信包
         └── serial_util         # 串口工具包(CRC校验等)
 
 ```
 
-- **car_detect节点**：负责读取摄像机图像，利用双层YOLOv5网络进行目标识别，分别得到机器人坐标和种类，发送给unity程序。
+- **detector**负责读取摄像机图像，利用双层YOLOv5进行目标识别，分别得到机器人坐标和种类，发送给unity程序。
   
-- **unity_raycast程序**：接收car_detect发送的坐标信息，进行碰撞检测获得三维坐标，发送给radar_serial。
+- **unity_raycast程序**接收car_detect发送的坐标信息，计算获得三维坐标，发送给**updater**。
 
-- **radar_serial节点**：接收unity程序发送的目标位置信息，将数据通过串口发送至裁判系统。
+- **updater**接收unity程序发送的目标位置信息，将数据通过串口发送至裁判系统。
 
 ## 部署方法
 
@@ -99,6 +99,8 @@ cd radar_ws
 ```zsh
 ./launch.sh
 ```
+同时运行起 **ROS_TCP_Endpoint** 节点
+
 
 程序运行日志会输出至```/resources/user_logs```目录下
 
