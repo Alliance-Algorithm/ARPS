@@ -22,15 +22,16 @@ public:
     RefereeSerialReceiver referee_serial_receiver_;
     RefereeSerialSubmitter referee_serial_submitter_;
     EnemyPointsReceiver radar_points_receiver_;
-    DebugPlotter plotter;
+    DebugPlotter plotter_;
 
     std::shared_ptr<Logger> logger_;
     Configs radar_config_;
 
     RadarUpdater()
-        : logger_(std::make_shared<Logger>(Logger::log_target::file, Logger::log_level::debug, radar_config_.log_path))
-        , radar_config_(read_config("./resources/config.json"))
+        : radar_config_(read_config("./resources/config.json"))
+
     {
+        logger_ = std::make_shared<Logger>(Logger::log_target::file, Logger::log_level::debug, radar_config_.log_path);
         initialize_serial();
         initialize_processors();
 
@@ -46,7 +47,7 @@ public:
 
     void process_data()
     {
-        plotter.plot();
+        plotter_.plot();
     }
 
 private:
@@ -112,7 +113,7 @@ private:
                 radar_information_,
                 logger_,
                 serial_);
-        plotter
+        plotter_
             = DebugPlotter(
                 radar_information_,
                 radar_config_);

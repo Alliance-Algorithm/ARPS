@@ -24,18 +24,10 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 def generate_launch_description():
     ld = launch.LaunchDescription()
 
-    # ld.add_action(
-    #     IncludeLaunchDescription(
-    #         PythonLaunchDescriptionSource(
-    #             [FindPackageShare("fast_lio"), "/launch", "/mapping.launch.py"]
-    #         )
-    #     )
-    # )
-
     ld.add_action(
         launch_ros.actions.Node(
-            package="radar_serial",
-            executable="radar_serial",
+            package="updater",
+            executable="updater",
             respawn=True,
             respawn_delay=2.0,
         )

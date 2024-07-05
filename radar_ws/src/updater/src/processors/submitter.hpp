@@ -41,6 +41,9 @@ public:
 
     void send_serial_data()
     {
+        if (!serial_->isOpen())
+            return;
+
         for (size_t i = 0; i < radar_information_->enemy_robot_positions.size(); i++) {
             uint8_t enemy_position_data[19];
             enemy_position_data_pack_old(enemy_position_data, radar_information_->enemy_robot_positions.find(i)->second, i, 0);
