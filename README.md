@@ -1,8 +1,6 @@
 # Automatic Radar Positioning System
 > 南京理工大学 Alliance战队 雷达兵种项目文档
 
-
-
 ``` 
 🚨:注意：此仓库为Robomaster比赛的雷达站兵种代码，并非激光雷达相关仓库！！请仔细甄别！！！ 
 ```
