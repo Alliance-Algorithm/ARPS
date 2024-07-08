@@ -1,3 +1,4 @@
+#include <chrono>
 #include <cstdint>
 #include <map>
 #include <string>
@@ -12,6 +13,13 @@ struct Configs {
 };
 
 struct enemy_robot_position {
+    float x;
+    float y;
+    std::chrono::steady_clock::time_point last_updated_time;
+};
+
+struct __attribute__((packed)) enemy_robot_position_to_sentry {
+    uint8_t id;
     float x;
     float y;
 };

@@ -4,6 +4,9 @@
 #include "submitter.hpp"
 
 #include <bitset>
+#include <chrono>
+#include <rcutils/types/rcutils_ret.h>
+#include <vector>
 
 #define RED 100
 #define BLUE 101
@@ -47,13 +50,13 @@ public:
                     auto it = radar_information_->enemy_robot_positions.find(int(temp_position.target_robot_id));
                     if (it != radar_information_->enemy_robot_positions.end()) {
                         it->second = enemy_robot_position {
-                            temp_position.target_position_x, temp_position.target_position_y
+                            temp_position.target_position_x, temp_position.target_position_y, std::chrono::steady_clock::now()
                         };
                     } else {
                         radar_information_->enemy_robot_positions.insert(
                             std::make_pair(int(temp_position.target_robot_id),
                                 enemy_robot_position {
-                                    temp_position.target_position_x, temp_position.target_position_y }));
+                                    temp_position.target_position_x, temp_position.target_position_y, std::chrono::steady_clock::now() }));
                     }
                 }
             }
@@ -66,6 +69,8 @@ public:
 
 class RefereeSerialReceiver {
 public:
+    Configs radar_config_;
+
     package::receive::Frame frame_;
     std::shared_ptr<serial::Serial> serial_;
     size_t cache_size_ = 0;
@@ -77,8 +82,10 @@ public:
     RefereeSerialReceiver(
         std::shared_ptr<RadarInformation> radar_information,
         std::shared_ptr<serial::Serial> serial,
-        std::shared_ptr<Logger> logger)
-        : serial_(serial)
+        std::shared_ptr<Logger> logger,
+        Configs radar_config)
+        : radar_config_(radar_config)
+        , serial_(serial)
         , logger_(logger)
         , radar_information_(radar_information)
     {
@@ -133,6 +140,8 @@ public:
             update_buff_info();
         if (command_id == 0x020E)
             update_radar_info();
+        if (command_id == 0x0301)
+            update_enemy_status_by_sentry();
     }
 
     void update_game_status()
@@ -176,6 +185,26 @@ public:
 
         radar_information_->is_double_debuff_enabled_ = static_cast<bool>(bit_2);
         logger_->INFO("[receive info]is doublebuff enabled:" + std::to_string(radar_information_->is_double_debuff_enabled_));
+    };
+    void update_enemy_status_by_sentry()
+    {
+        auto& data = reinterpret_cast<package::receive::DataFromSentry&>(frame_.body.data);
+        if (data.sender_id != (radar_config_.friend_side == RED ? 7 : 107) || data.receiver_id != (radar_config_.friend_side == RED ? 9 : 109) || data.data_cmd_id != 0x0222)
+            return;
+
+        auto enemy_robot_positions_received_from_sentry = reinterpret_cast<std::vector<enemy_robot_position_to_sentry>&>(data.user_data);
+
+        for (int i = 0; i < static_cast<int>(enemy_robot_positions_received_from_sentry.size()); i++) {
+            if (enemy_robot_positions_received_from_sentry[i].x == -114514 && enemy_robot_positions_received_from_sentry[i].y == -114514)
+                continue;
+
+            auto it = radar_information_->enemy_robot_positions.find(enemy_robot_positions_received_from_sentry[i].id);
+            if (it != radar_information_->enemy_robot_positions.end()) {
+                it->second.x = enemy_robot_positions_received_from_sentry[i].x;
+                it->second.y = enemy_robot_positions_received_from_sentry[i].y;
+                it->second.last_updated_time = std::chrono::steady_clock::now();
+            }
+        }
     };
 };
 }

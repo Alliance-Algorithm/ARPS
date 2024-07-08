@@ -72,4 +72,11 @@ struct __attribute__((packed)) DartInfo {
     uint16_t dart_info;
 };
 
+struct __attribute__((packed)) DataFromSentry {
+    uint16_t data_cmd_id;
+    uint16_t sender_id;
+    uint16_t receiver_id;
+    uint8_t user_data[70];
+};
+
 } // namespace package::receive

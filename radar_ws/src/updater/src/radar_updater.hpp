@@ -7,6 +7,7 @@
 #include "processors/receiver.hpp"
 #include "processors/submitter.hpp"
 
+#include <chrono>
 #include <memory>
 
 #define RED 100
@@ -47,6 +48,12 @@ public:
 
     void process_data()
     {
+        for (auto single_enemy_robot_position : radar_information_->enemy_robot_positions) {
+            float time_duration = static_cast<float>(
+                std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - single_enemy_robot_position.second.last_updated_time).count());
+            if (time_duration > radar_config_.delay_duration)
+                radar_information_->enemy_robot_positions.erase(single_enemy_robot_position.first);
+        }
         plotter_.plot();
     }
 
@@ -102,7 +109,8 @@ private:
             = RefereeSerialReceiver(
                 radar_information_,
                 serial_,
-                logger_);
+                logger_,
+                radar_config_);
         radar_points_receiver_
             = EnemyPointsReceiver(
                 radar_information_,
@@ -112,7 +120,8 @@ private:
             = RefereeSerialSubmitter(
                 radar_information_,
                 logger_,
-                serial_);
+                serial_,
+                radar_config_);
         plotter_
             = DebugPlotter(
                 radar_information_,
