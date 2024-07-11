@@ -26,7 +26,10 @@ public:
         Configs radar_config)
         : logger_(logger)
         , radar_config_(radar_config)
-        , radar_information_(radar_information) {};
+        , radar_information_(radar_information)
+    {
+        logger->INFO("[√]initialized topic receiver node.");
+    };
 
 public:
     void receive_enemy_data(const std_msgs::msg::Float32MultiArray::SharedPtr msg)
@@ -89,7 +92,7 @@ public:
         , logger_(logger)
         , radar_information_(radar_information)
     {
-        logger->INFO("[√]initialized serial node.");
+        logger->INFO("[√]initialized serial receiver node.");
     };
 
 public:

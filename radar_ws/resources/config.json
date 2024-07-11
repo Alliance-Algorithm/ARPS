@@ -4,7 +4,7 @@
     "LEN_ALL_RESULT": 38001,
     "LEN_ONE_RESULT": 38,
     "VIDEO_STREAM_MODE": "VIDEO",
-    "DETECT_DEBUG": "true",
+    "DETECT_DEBUG": "false",
     "SERIAL_DEBUG": "true",
     "FRIEND_SIDE": "RED",
     "publish_topic": "detect_result",

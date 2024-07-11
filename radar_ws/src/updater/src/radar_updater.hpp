@@ -8,7 +8,10 @@
 #include "processors/submitter.hpp"
 
 #include <chrono>
+#include <exception>
 #include <memory>
+#include <rclcpp/logging.hpp>
+#include <string>
 
 #define RED 100
 #define BLUE 101
@@ -32,18 +35,26 @@ public:
         : radar_config_(read_config("./resources/config.json"))
 
     {
-        logger_ = std::make_shared<Logger>(Logger::log_target::file, Logger::log_level::debug, radar_config_.log_path);
-        initialize_serial();
-        initialize_processors();
+        try {
+            initialize_logger();
+            initialize_serial();
+            initialize_processors();
+        } catch (const std::exception& e) {
+            logger_->ERRORS(e.what());
+        }
 
         logger_->INFO("[√]initialized updater node.");
     };
 
     void update_radar_status()
     {
-        referee_serial_receiver_.receive_referee_data();
-        process_data();
-        referee_serial_submitter_.send_serial_data();
+        try {
+            referee_serial_receiver_.receive_referee_data();
+            process_data();
+            referee_serial_submitter_.send_serial_data();
+        } catch (const std::exception& e) {
+            logger_->ERRORS(e.what());
+        }
     }
 
     void process_data()
@@ -54,7 +65,8 @@ public:
             if (time_duration > radar_config_.delay_duration)
                 radar_information_->enemy_robot_positions.erase(single_enemy_robot_position.first);
         }
-        plotter_.plot();
+        if (radar_config_.debug)
+            plotter_.plot();
     }
 
 private:
@@ -72,6 +84,10 @@ private:
         config.serial_port = config_json["serial_port"].get<std::string>();
         config.delay_duration = config_json["delay_duration"].get<float>();
         return config;
+    }
+    void initialize_logger()
+    {
+        logger_ = std::make_shared<Logger>(Logger::log_target::file, Logger::log_level::debug, radar_config_.log_path);
     }
 
     void initialize_serial()

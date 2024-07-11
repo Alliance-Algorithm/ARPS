@@ -40,7 +40,10 @@ public:
         : logger_(logger)
         , serial_(serial)
         , radar_information_(radar_information)
-        , radar_config_(radar_config) {};
+        , radar_config_(radar_config)
+    {
+        logger_->INFO("[√]initialized submitter node.");
+    };
 
     void send_serial_data()
     {
@@ -54,7 +57,8 @@ public:
             // 串口数据发送
             serial_->write(enemy_position_data, sizeof(enemy_position_data));
         }
-        uint8_t enemy_position_data_to_sentry[73];
+
+        uint8_t enemy_position_data_to_sentry[69];
         enemy_position_data_pack_to_sentry(enemy_position_data_to_sentry, radar_information_->enemy_robot_positions, 0);
         serial_util::dji_crc::append_crc16(enemy_position_data_to_sentry);
         serial_->write(enemy_position_data_to_sentry, sizeof(enemy_position_data_to_sentry));
@@ -129,7 +133,6 @@ public:
      */
     void enemy_position_data_pack_to_sentry(uint8_t* serial_data, std::map<int, enemy_robot_position> enemy_robot_positions, int req)
     {
-        std::vector<enemy_robot_position_to_sentry> enemy_robot_positions_to_sentry;
         // 帧头
         uint8_t frame_header[5]
             = { 0xA5, 0x0A, 0, (uint8_t)req }; // SOF, 数据长度高8位, 数据长度低8位, 包序号
@@ -146,21 +149,18 @@ public:
 
         for (int i = 0; i < 6; i++) {
             enemy_robot_position_to_sentry single_enemy_position;
-            single_enemy_position.id = radar_config_.friend_side == RED ? i + 101 : i + 1;
+            single_enemy_position.id = (radar_config_.friend_side == RED ? i + 101 : i + 1);
 
             auto it = enemy_robot_positions.find(i);
             if (it != enemy_robot_positions.end()) {
                 single_enemy_position.x = it->second.x;
                 single_enemy_position.y = it->second.y;
             } else {
-                single_enemy_position.x = -114514;
-                single_enemy_position.y = -114514;
+                single_enemy_position.x = -404;
+                single_enemy_position.y = -404;
             }
-
-            enemy_robot_positions_to_sentry.push_back(single_enemy_position);
+            reinterpret_cast<enemy_robot_position_to_sentry&>(serial_data[13 + (i * sizeof(single_enemy_position))]) = single_enemy_position;
         }
-
-        reinterpret_cast<std::vector<enemy_robot_position_to_sentry>&>(serial_data[13]) = enemy_robot_positions_to_sentry;
     }
 };
 }
