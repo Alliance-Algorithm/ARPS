@@ -18,6 +18,21 @@ struct enemy_robot_position {
     std::chrono::steady_clock::time_point last_updated_time;
 };
 
+struct __attribute__((packed)) enemy_robot_position_new {
+    uint16_t hero_position_x;
+    uint16_t hero_position_y;
+    uint16_t engineer_position_x;
+    uint16_t engineer_position_y;
+    uint16_t infantry_3_position_x;
+    uint16_t infantry_3_position_y;
+    uint16_t infantry_4_position_x;
+    uint16_t infantry_4_position_y;
+    uint16_t infantry_5_position_x;
+    uint16_t infantry_5_position_y;
+    uint16_t sentry_position_x;
+    uint16_t sentry_position_y;
+};
+
 struct __attribute__((packed)) enemy_robot_position_to_sentry {
     uint8_t id;
     float x;

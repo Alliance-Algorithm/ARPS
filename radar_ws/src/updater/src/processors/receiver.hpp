@@ -143,8 +143,8 @@ public:
             update_buff_info();
         if (command_id == 0x020E)
             update_radar_info();
-        if (command_id == 0x0301)
-            update_enemy_status_by_sentry();
+        // if (command_id == 0x0301)
+        //     update_enemy_status_by_sentry();
     }
 
     void update_game_status()
