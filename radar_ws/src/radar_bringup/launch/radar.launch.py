@@ -1,24 +1,5 @@
 import launch
-import launch_ros
-
-# from launch import LaunchDescription
-# from launch.actions import DeclareLaunchArgument, RegisterEventHandler, TimerAction
-# from launch.actions import IncludeLaunchDescription
-from launch.event_handlers import OnProcessExit, OnProcessStart
-
-# from launch.substitutions import (
-#     Command,
-#     FindExecutable,
-#     LaunchConfiguration,
-#     PathJoinSubstitution,
-# )
-# from launch_ros.actions import Node
-# from launch_ros.substitutions import FindPackageShare
-
-from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription, RegisterEventHandler
-from launch_ros.substitutions import FindPackageShare
-from launch.launch_description_sources import PythonLaunchDescriptionSource
+import launch_ros # type: ignore
 
 
 def generate_launch_description():
@@ -26,8 +7,17 @@ def generate_launch_description():
 
     ld.add_action(
         launch_ros.actions.Node(
-            package="updater",
-            executable="updater",
+            package="radar_updater",
+            executable="radar_updater",
+            respawn=True,
+            respawn_delay=2.0,
+        )
+    )
+
+    ld.add_action(
+        launch_ros.actions.Node(
+            package="radar_detector",
+            executable="radar_detector",
             respawn=True,
             respawn_delay=2.0,
         )
@@ -41,14 +31,4 @@ def generate_launch_description():
             respawn_delay=2.0,
         )
     )
-
-    ld.add_action(
-        launch_ros.actions.Node(
-            package="car_detect",
-            executable="car_detect",
-            respawn=True,
-            respawn_delay=2.0,
-        )
-    )
-
     return ld

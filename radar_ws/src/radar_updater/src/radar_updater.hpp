@@ -46,6 +46,11 @@ public:
         logger_->INFO("[√]initialized updater node.");
     };
 
+    ~RadarUpdater()
+    {
+        logger_->INFO("[-] Exited updater node.");
+    }
+
     void update_radar_status()
     {
         try {

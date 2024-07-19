@@ -121,9 +121,9 @@ public:
                 [](const package::receive::FrameHeader& header) {
                     return serial_util::dji_crc::verify_crc8(header);
                 });
-            if (result == serial_util::ReceiveResult::HEADER_INVAILD) {
+            if (result == serial_util::ReceiveResult::HEADER_INVALID) {
                 logger_->WARNING("Header start invalid");
-            } else if (result == serial_util::ReceiveResult::VERIFY_INVAILD) {
+            } else if (result == serial_util::ReceiveResult::HEADER_INVALID) {
                 logger_->WARNING("Header crc8 invalid");
             }
         }

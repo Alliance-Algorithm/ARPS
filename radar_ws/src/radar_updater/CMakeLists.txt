@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(updater)
+project(radar_updater)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -34,10 +34,10 @@ endif()
 
 
 ament_package()
-add_executable(updater src/mainprocess.cpp)
-ament_target_dependencies(updater rclcpp std_msgs serial_util OpenCV)
+add_executable(${PROJECT_NAME} src/mainprocess.cpp)
+ament_target_dependencies(${PROJECT_NAME} rclcpp std_msgs serial_util OpenCV)
 
 install(TARGETS
-  updater
+  ${PROJECT_NAME}
   DESTINATION lib/${PROJECT_NAME}
 )

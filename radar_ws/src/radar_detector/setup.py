@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-package_name = 'car_detect'
+package_name = 'radar_detector'
 
 setup(
     name=package_name,
@@ -20,7 +20,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            "car_detect = car_detect.car_detect:main"
+            "radar_detector = radar_detector.radar_detector:main"
         ],
     },
 )
