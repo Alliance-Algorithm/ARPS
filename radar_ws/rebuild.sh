@@ -1,4 +1,4 @@
 #! /bin/zsh
 
 source /opt/ros/humble/setup.zsh
-colcon build
+colcon build --symlink-install

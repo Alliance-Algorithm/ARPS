@@ -1,3 +1,5 @@
+# @TODO rewrite this shit
+
 from queue import Queue
 import traceback
 

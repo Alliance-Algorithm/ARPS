@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <sys/cdefs.h>
 
-namespace package::receive {
+namespace radar::package::receive {
 
 constexpr size_t frame_data_max_length = 1024;
 

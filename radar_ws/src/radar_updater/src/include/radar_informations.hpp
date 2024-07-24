@@ -1,9 +1,11 @@
+#pragma once
+
 #include <chrono>
 #include <cstdint>
 #include <map>
 #include <string>
 
-namespace radar {
+namespace radar::info {
 struct Configs {
     bool debug;
     int friend_side;
@@ -33,32 +35,18 @@ struct __attribute__((packed)) enemy_robot_position_new {
     uint16_t sentry_position_y;
 };
 
-struct __attribute__((packed)) enemy_robot_position_to_sentry {
+struct __attribute__((packed)) robot_position_to_sentry {
     uint8_t id;
     float x;
     float y;
 };
 
-/*
- * 串口数据格式 - 定位数据
- * 帧头(5字节) + cmd id(2字节) + 数据(10字节) + CRC16(2字节)
- * 帧头: SOF(1字节) + 数据长度(2字节) + 包序号(1字节) + CRC8(1字节)
- * 数据: 目标机器人ID(2字节) + 目标机器人x坐标(4字节) + 目标机器人y坐标(4字节)
- * 帧尾: CRC16(2字节)
- */
-struct __attribute__((packed)) map_robot_data_t {
+struct __attribute__((packed)) single_robot_position_data {
     uint16_t target_robot_id;
     float target_position_x;
     float target_position_y;
 };
 
-/*
- * 串口数据格式 - 雷达决策数据
- * 帧头(5字节) + cmd id(2字节) + 数据(1字节) + CRC16(2字节)
- * 帧头: SOF(1字节) + 数据长度(2字节) + 包序号(1字节) + CRC8(1字节)
- * 数据: cmd命令(1字节)
- * 帧尾: CRC16(2字节)
- */
 struct __attribute__((packed)) radar_cmd_t {
     uint8_t cmd;
 };
@@ -72,6 +60,7 @@ enum class GameState {
     STARTED,
     SETTLING
 };
+
 /* - 比赛信息 - ;
    己方颜色  friend_Side;
    比赛状态  gamestate;
@@ -86,7 +75,7 @@ enum class GameState {
    开启双倍易伤  enable_double_debuff;
    雷达决策命令  double_debuff_cmd;
  */
-class RadarInformation {
+class Informations {
 public:
     int friend_Side_;
     GameState gamestate_;
