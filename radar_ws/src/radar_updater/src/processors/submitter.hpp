@@ -77,7 +77,8 @@ public:
     {
         std::vector<cv::Point2d> enemy_positions(6, cv::Point2d(0, 0));
         for (int i = 0; i < 6; i++) {
-            auto it = enemy_robot_positions.find(i);
+
+            auto it = enemy_robot_positions.find(radar_information_->catorgories[i]);
             if (it != enemy_robot_positions.end()) {
                 enemy_positions[i] = cv::Point2d(it->second.x, it->second.y);
             }

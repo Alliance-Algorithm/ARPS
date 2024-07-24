@@ -9,6 +9,7 @@
 
 #include <chrono>
 #include <exception>
+#include <map>
 #include <memory>
 #include <rclcpp/logging.hpp>
 #include <string>
@@ -31,7 +32,7 @@ public:
     std::shared_ptr<Logger> logger_;
     Configs radar_config_;
 
-    RadarUpdater()
+    explicit RadarUpdater()
         : radar_config_(read_config("./resources/config.json"))
 
     {
@@ -51,6 +52,7 @@ public:
         logger_->INFO("[-] Exited updater node.");
     }
 
+private:
     void update_radar_status()
     {
         try {
@@ -113,8 +115,30 @@ private:
     {
         std::map<int, enemy_robot_position> empty;
         empty.clear();
-        radar_information_ = std::make_shared<RadarInformation>(
-            RadarInformation {
+
+        std::map<int, int> catogory;
+        if (radar_config_.friend_side == RED) {
+            catogory = {
+                { 0, 1 },
+                { 1, 2 },
+                { 2, 3 },
+                { 3, 4 },
+                { 4, 5 },
+                { 5, 7 },
+            };
+        } else {
+            catogory = {
+                { 0, 101 },
+                { 1, 102 },
+                { 2, 103 },
+                { 3, 104 },
+                { 4, 105 },
+                { 5, 107 },
+            };
+        }
+
+        radar_information_
+            = std::make_shared<RadarInformation>(RadarInformation {
                 radar_config_.friend_side,
                 GameState::NOT_START,
                 -1,
@@ -125,7 +149,8 @@ private:
                 0,
                 0,
                 false,
-                empty });
+                empty,
+                catogory });
         referee_serial_receiver_
             = RefereeSerialReceiver(
                 radar_information_,
@@ -149,5 +174,4 @@ private:
                 radar_config_);
     }
 };
-
 }

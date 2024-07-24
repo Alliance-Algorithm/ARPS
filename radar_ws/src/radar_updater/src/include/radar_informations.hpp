@@ -108,6 +108,7 @@ public:
     };
 
     std::map<int, enemy_robot_position> enemy_robot_positions;
+    std::map<int, int> catorgories;
 };
 
 }
