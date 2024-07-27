@@ -61,24 +61,25 @@ void Updater::initialize_processors()
     std::map<int, info::enemy_robot_position> empty;
     empty.clear();
 
-    std::map<int, int> catogory;
+    std::map<int, int> enemy_catogory;
     if (radar_config_.friend_side == RED) {
-        catogory = {
-            { 0, 1 },
-            { 1, 2 },
-            { 2, 3 },
-            { 3, 4 },
-            { 4, 5 },
-            { 5, 7 },
-        };
-    } else {
-        catogory = {
+        enemy_catogory = {
             { 0, 101 },
             { 1, 102 },
             { 2, 103 },
             { 3, 104 },
             { 4, 105 },
             { 5, 107 },
+        };
+
+    } else {
+        enemy_catogory = {
+            { 0, 1 },
+            { 1, 2 },
+            { 2, 3 },
+            { 3, 4 },
+            { 4, 5 },
+            { 5, 7 },
         };
     }
 
@@ -95,7 +96,7 @@ void Updater::initialize_processors()
             0,
             false,
             empty,
-            catogory });
+            enemy_catogory });
 }
 void Updater::initialize_callbacks()
 {

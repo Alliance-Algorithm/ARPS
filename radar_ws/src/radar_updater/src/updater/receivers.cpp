@@ -85,8 +85,8 @@ void Updater::process_frame_info()
         update_buff_info();
     if (command_id == 0x020E)
         update_radar_info();
-    // if (command_id == 0x0301)
-    //     update_enemy_status_by_sentry();
+    if (command_id == 0x0301)
+        update_enemy_status_by_sentry();
 }
 
 void Updater::update_game_status()
@@ -131,23 +131,35 @@ void Updater::update_radar_info()
     radar_information_->is_double_debuff_enabled_ = static_cast<bool>(bit_2);
     RCLCPP_INFO(get_logger(), "[receive info]is doublebuff enabled:%d", radar_information_->is_double_debuff_enabled_);
 };
+
 void Updater::update_enemy_status_by_sentry()
 {
     auto& data = reinterpret_cast<package::receive::DataFromSentry&>(frame_.body.data);
     if (data.sender_id != (radar_config_.friend_side == RED ? 7 : 107) || data.receiver_id != (radar_config_.friend_side == RED ? 9 : 109) || data.data_cmd_id != 0x0222)
         return;
 
-    auto enemy_robot_positions_received_from_sentry = reinterpret_cast<std::vector<info::robot_position_to_sentry>&>(data.user_data);
+    auto sensor_data = reinterpret_cast<info::enemy_robot_position_from_sentry&>(data.user_data);
 
-    for (int i = 0; i < static_cast<int>(enemy_robot_positions_received_from_sentry.size()); i++) {
-        if (enemy_robot_positions_received_from_sentry[i].x == -114514 && enemy_robot_positions_received_from_sentry[i].y == -114514)
+    for (int i = 0; i < 6; i++) {
+        if (sensor_data.positions[i].x == 0 && sensor_data.positions[i].y == 0)
             continue;
 
-        auto it = radar_information_->enemy_robot_positions.find(enemy_robot_positions_received_from_sentry[i].id);
+        // m to cm
+        sensor_data.positions[i].x *= 100;
+        sensor_data.positions[i].y *= 100;
+
+        auto it = radar_information_->enemy_robot_positions.find(radar_information_->enemy_catorgories[i]);
         if (it != radar_information_->enemy_robot_positions.end()) {
-            it->second.x = enemy_robot_positions_received_from_sentry[i].x;
-            it->second.y = enemy_robot_positions_received_from_sentry[i].y;
+            it->second.x = sensor_data.positions[i].x;
+            it->second.y = sensor_data.positions[i].y;
             it->second.last_updated_time = std::chrono::steady_clock::now();
+        } else {
+            radar_information_->enemy_robot_positions.insert(
+                std::make_pair(radar_information_->enemy_catorgories[i],
+                    info::enemy_robot_position {
+                        sensor_data.positions[i].x,
+                        sensor_data.positions[i].y,
+                        std::chrono::steady_clock::now() }));
         }
     }
 };

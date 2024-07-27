@@ -35,10 +35,12 @@ struct __attribute__((packed)) enemy_robot_position_new {
     uint16_t sentry_position_y;
 };
 
-struct __attribute__((packed)) robot_position_to_sentry {
-    uint8_t id;
-    float x;
-    float y;
+struct __attribute__((packed)) enemy_robot_position_from_sentry {
+    struct
+    {
+        float x;
+        float y;
+    } positions[6];
 };
 
 struct __attribute__((packed)) single_robot_position_data {
@@ -97,7 +99,7 @@ public:
     };
 
     std::map<int, enemy_robot_position> enemy_robot_positions;
-    std::map<int, int> catorgories;
+    std::map<int, int> enemy_catorgories;
 };
 
 }

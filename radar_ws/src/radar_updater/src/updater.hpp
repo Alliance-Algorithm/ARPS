@@ -91,7 +91,7 @@ private:
     /* submitter */
     void submit_serial_data();
     void enemy_position_data_pack(uint8_t* serial_data, std::map<int, info::enemy_robot_position> enemy_robot_positions, int req);
-    void enemy_position_data_pack_to_sentry(uint8_t* serial_data, std::map<int, info::enemy_robot_position> enemy_robot_positions, int req);
+    void enemy_position_data_to_sentry_pack(uint8_t* serial_data, std::map<int, info::enemy_robot_position> enemy_robot_positions, int req);
     void radar_cmd_data_pack(uint8_t* serial_data, int double_debuff_cmd, int req);
 
 private:
