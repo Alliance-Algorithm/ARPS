@@ -144,10 +144,6 @@ void Updater::update_enemy_status_by_sentry()
         if (sensor_data.positions[i].x == 0 && sensor_data.positions[i].y == 0)
             continue;
 
-        // m to cm
-        sensor_data.positions[i].x *= 100;
-        sensor_data.positions[i].y *= 100;
-
         auto it = radar_information_->enemy_robot_positions.find(radar_information_->enemy_catorgories[i]);
         if (it != radar_information_->enemy_robot_positions.end()) {
             it->second.x = sensor_data.positions[i].x;
