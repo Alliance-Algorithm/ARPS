@@ -23,5 +23,13 @@ void Updater::process_data()
     }
     if (radar_config_.debug)
         plot();
+
+    if (radar_information_->is_active_big_buff_ || radar_information_->enemy_sentry_hp_ < 380)
+        if (!radar_information_->is_double_debuff_enabled_ && radar_information_->double_debuff_chances_ != 0)
+            radar_information_->double_debuff_cmd_++;
+
+    if (radar_information_->time_remain_ < 30) {
+        radar_information_->double_debuff_cmd_++;
+    }
 }
 }

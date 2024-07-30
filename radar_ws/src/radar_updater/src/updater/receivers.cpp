@@ -139,7 +139,7 @@ void Updater::update_enemy_status_by_sentry()
     if (data.sender_id != (radar_config_.friend_side == RED ? 7 : 107) || data.receiver_id != (radar_config_.friend_side == RED ? 9 : 109) || data.data_cmd_id != 0x0222)
         return;
 
-    auto sensor_data = reinterpret_cast<info::enemy_robot_position_from_sentry&>(data.user_data);
+    auto sensor_data = reinterpret_cast<info::position_data_with_sentry&>(data.user_data);
     RCLCPP_INFO(get_logger(), "--->[0x0301] receive data from sentry.");
 
     for (int i = 0; i < 6; i++) {

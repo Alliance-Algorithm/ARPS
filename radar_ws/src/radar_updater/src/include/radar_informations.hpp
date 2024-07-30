@@ -35,7 +35,7 @@ struct __attribute__((packed)) enemy_robot_position_new {
     uint16_t sentry_position_y;
 };
 
-struct __attribute__((packed)) enemy_robot_position_from_sentry {
+struct __attribute__((packed)) position_data_with_sentry {
     struct
     {
         float x;
