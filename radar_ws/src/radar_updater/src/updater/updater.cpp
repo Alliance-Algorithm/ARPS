@@ -107,6 +107,6 @@ void Updater::initialize_callbacks()
             });
     using namespace std::chrono_literals;
     updater_timer = this->create_wall_timer(
-        20ms, [this]() { update_radar_status(); });
+        200ms, [this]() { update_radar_status(); });
 }
 }

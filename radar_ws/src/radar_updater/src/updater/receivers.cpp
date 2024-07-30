@@ -74,11 +74,12 @@ void Updater::receive_referee_data()
 void Updater::process_frame_info()
 {
     auto command_id = frame_.body.command_id;
-    RCLCPP_INFO(get_logger(), "Referee command id: %x", command_id);
-    RCLCPP_INFO(get_logger(), "Radar CMD: %d", radar_information_->double_debuff_cmd_);
+    // RCLCPP_INFO(get_logger(), "* Receive [0x0%x]", command_id);
 
-    if (command_id == 0x0001)
+    if (command_id == 0x0001) {
         update_game_status();
+        RCLCPP_INFO(get_logger(), "---> Radar command ID [%d]", radar_information_->double_debuff_cmd_);
+    }
     if (command_id == 0x0003)
         update_sentry_hp();
     if (command_id == 0x0101)
@@ -95,7 +96,7 @@ void Updater::update_game_status()
 
     radar_information_->gamestate_ = static_cast<info::GameState>(data.game_stage);
     radar_information_->time_remain_ = static_cast<int>(data.stage_remain_time);
-    RCLCPP_INFO(get_logger(), "---> receive gamestate:%d|time_remain:%d",
+    RCLCPP_INFO(get_logger(), "--->[0x0001] receive gamestate:%d|time_remain:%d",
         static_cast<int>(radar_information_->gamestate_), radar_information_->time_remain_);
 };
 void Updater::update_sentry_hp()
@@ -103,7 +104,7 @@ void Updater::update_sentry_hp()
     auto& data = reinterpret_cast<package::receive::GameRobotHp&>(frame_.body.data);
 
     radar_information_->enemy_sentry_hp_ = radar_information_->friend_Side_ == RED ? data.blue_7 : data.red_7;
-    RCLCPP_INFO(get_logger(), "receive enemy sentry hp:%f", radar_information_->enemy_sentry_hp_);
+    RCLCPP_INFO(get_logger(), "--->[0x0003] receive enemy sentry hp:%f", radar_information_->enemy_sentry_hp_);
 };
 void Updater::update_buff_info()
 {
@@ -111,7 +112,7 @@ void Updater::update_buff_info()
     std::bitset<32> event_info_val(data.event_data);
 
     radar_information_->is_active_big_buff_ = static_cast<bool>(event_info_val[5]);
-    RCLCPP_INFO(get_logger(), "receive big buff info:%d", radar_information_->is_active_big_buff_);
+    RCLCPP_INFO(get_logger(), "--->[0x0101] receive big buff info:%d", radar_information_->is_active_big_buff_);
 };
 void Updater::update_radar_info()
 {
@@ -122,14 +123,14 @@ void Updater::update_radar_info()
     auto bit_2 = (data.radar_info >> 5) % 2;
 
     int current_double_debuff_chances = bit_0 * 2 + bit_1;
-    RCLCPP_INFO(get_logger(), "receive double debuff chances: %d", current_double_debuff_chances);
+    RCLCPP_INFO(get_logger(), "--->[0x020E] receive double debuff chances: %d", current_double_debuff_chances);
     if (current_double_debuff_chances > radar_information_->double_debuff_chances_) {
-        RCLCPP_INFO(get_logger(), "double debuff chances add:%d", radar_information_->double_debuff_chances_);
+        RCLCPP_INFO(get_logger(), "--->[0x020E] double debuff chances add:%d", radar_information_->double_debuff_chances_);
     }
     radar_information_->double_debuff_chances_ = current_double_debuff_chances;
 
     radar_information_->is_double_debuff_enabled_ = static_cast<bool>(bit_2);
-    RCLCPP_INFO(get_logger(), "[receive info]is doublebuff enabled:%d", radar_information_->is_double_debuff_enabled_);
+    RCLCPP_INFO(get_logger(), "--->[0x020E] receive doublebuff if enabled:%d", radar_information_->is_double_debuff_enabled_);
 };
 
 void Updater::update_enemy_status_by_sentry()
@@ -139,6 +140,7 @@ void Updater::update_enemy_status_by_sentry()
         return;
 
     auto sensor_data = reinterpret_cast<info::enemy_robot_position_from_sentry&>(data.user_data);
+    RCLCPP_INFO(get_logger(), "--->[0x0301] receive data from sentry.");
 
     for (int i = 0; i < 6; i++) {
         if (sensor_data.positions[i].x == 0 && sensor_data.positions[i].y == 0)

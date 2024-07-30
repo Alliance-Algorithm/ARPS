@@ -6,7 +6,7 @@
     "VIDEO_STREAM_MODE": "VIDEO",
     "DETECT_DEBUG": "false",
     "SERIAL_DEBUG": "true",
-    "FRIEND_SIDE": "RED",
+    "FRIEND_SIDE": "BLUE",
     "publish_topic": "detect_result",
     "PLUGIN_LIBRARY": "./resources/userlib/libyologpu.so",
     "car_engine_file_path": "./resources/models/car_identfy.engine",

@@ -1,4 +1,5 @@
 #include "../updater.hpp"
+#include <cstdint>
 #include <rclcpp/logging.hpp>
 
 namespace radar {
@@ -15,12 +16,14 @@ void Updater::submit_serial_data()
     serial_util::dji_crc::append_crc16(enemy_position_data);
     serial_->write(enemy_position_data, sizeof(enemy_position_data));
 
+    RCLCPP_INFO(get_logger(), "* Radar data submitted [0x0305] | Size: %lu", radar_information_->enemy_robot_positions.size());
+
     // uint8_t enemy_position_data_to_sentry[69];
     // enemy_position_data_pack_to_sentry(enemy_position_data_to_sentry, radar_information_->enemy_robot_positions, 0);
     // serial_util::dji_crc::append_crc16(enemy_position_data_to_sentry);
     // serial_->write(enemy_position_data_to_sentry, sizeof(enemy_position_data_to_sentry));
 
-    uint8_t radar_decision_data[10];
+    uint8_t radar_decision_data[16];
     radar_cmd_data_pack(radar_decision_data, radar_information_->double_debuff_cmd_, 0);
     serial_util::dji_crc::append_crc16(radar_decision_data);
     serial_->write(radar_decision_data, sizeof(radar_decision_data));
@@ -60,7 +63,7 @@ void Updater::enemy_position_data_pack(uint8_t* serial_data, std::map<int, info:
 
     // 帧头
     uint8_t frame_header[5]
-        = { 0xA5, 0x0A, 0, (uint8_t)req }; // SOF, 数据长度高8位, 数据长度低8位, 包序号
+        = { 0xA5, static_cast<uint8_t>(24), 0, static_cast<uint8_t>(req) }; // SOF, 数据长度高8位, 数据长度低8位, 包序号
     serial_util::dji_crc::append_crc8(frame_header);
 
     for (int i = 0; i < 5; i++)
@@ -79,15 +82,18 @@ void Updater::enemy_position_data_pack(uint8_t* serial_data, std::map<int, info:
 void Updater::radar_cmd_data_pack(uint8_t* serial_data, int double_debuff_cmd, int req)
 {
     // 帧头
-    uint8_t frame_header[5] = { 0xA5, 0x0A, 0, (uint8_t)req }; // SOF, 数据长度高8位, 数据长度低8位, 包序号
+    // TODO: 数据长度
+    uint8_t frame_header[5] = { 0xA5, 0x07, 0, (uint8_t)req }; // SOF, 数据长度高8位, 数据长度低8位, 包序号
     serial_util::dji_crc::append_crc8(frame_header);
 
     for (int i = 0; i < 5; i++)
         serial_data[i] = frame_header[i];
 
-    reinterpret_cast<uint16_t&>(serial_data[5]) = 0x0121;
-
-    reinterpret_cast<int&>(serial_data[7]) = double_debuff_cmd;
+    reinterpret_cast<uint16_t&>(serial_data[5]) = 0x0301; // 命令id
+    reinterpret_cast<uint16_t&>(serial_data[7]) = 0x0121; // 子内容id
+    reinterpret_cast<uint16_t&>(serial_data[9]) = radar_config_.friend_side == RED ? 9 : 109; // 雷达id
+    reinterpret_cast<uint16_t&>(serial_data[11]) = 0x8080; // 裁判系统id
+    reinterpret_cast<int&>(serial_data[13]) = double_debuff_cmd;
 }
 
 /*
