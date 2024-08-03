@@ -46,6 +46,7 @@ void Updater::submit_serial_data()
     radar_cmd_data_pack(radar_decision_data, radar_information_->double_debuff_cmd_, 0);
     serial_util::dji_crc::append_crc16(radar_decision_data);
     serial_->write(radar_decision_data, sizeof(radar_decision_data));
+    RCLCPP_INFO(get_logger(), "* Radar cmd submitted [0x0301|0x0121] | CMD: %d", radar_information_->double_debuff_cmd_);
 }
 
 /*
@@ -130,7 +131,7 @@ void Updater::enemy_position_data_to_sentry_pack(uint8_t* serial_data, std::map<
 
     for (int i = 0; i < 5; i++)
         serial_data[i] = frame_header[i];
-    reinterpret_cast<uint16_t&>(serial_data[5]) = 0x0305;
+    reinterpret_cast<uint16_t&>(serial_data[5]) = 0x0301;
 
     // 与哨兵的约定id : 0x0222
     reinterpret_cast<uint16_t&>(serial_data[7]) = 0x0222;
@@ -145,8 +146,8 @@ void Updater::enemy_position_data_to_sentry_pack(uint8_t* serial_data, std::map<
             single_enemy_position.positions[i].x = it->second.x;
             single_enemy_position.positions[i].y = it->second.y;
         } else {
-            single_enemy_position.positions[i].x = 0;
-            single_enemy_position.positions[i].y = 0;
+            single_enemy_position.positions[i].x = -114514;
+            single_enemy_position.positions[i].y = -114514;
         }
         reinterpret_cast<info::position_data_with_sentry&>(serial_data[13]) = single_enemy_position;
     }

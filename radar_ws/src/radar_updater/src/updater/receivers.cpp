@@ -143,7 +143,7 @@ void Updater::update_enemy_status_by_sentry()
     RCLCPP_INFO(get_logger(), "--->[0x0301] receive data from sentry.");
 
     for (int i = 0; i < 6; i++) {
-        if (sensor_data.positions[i].x == 0 && sensor_data.positions[i].y == 0)
+        if (sensor_data.positions[i].x == -114514 && sensor_data.positions[i].y == -114514)
             continue;
 
         auto it = radar_information_->enemy_robot_positions.find(radar_information_->enemy_catorgories[i]);
