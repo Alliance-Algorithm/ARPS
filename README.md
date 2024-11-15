@@ -1,7 +1,5 @@
 # Automatic Radar Positioning System
-> 南京理工大学 Alliance战队 雷达兵种项目文档
-
-``` 🚨:注意：此仓库已过时，且不再维护和运行，新仓库请看：[ARPS-unity](https://github.com/Lisiiii/ARPS-unity) ```
+> 🚨:注意：此仓库已过时，且不再维护和运行，新仓库请看：[ARPS-unity](https://github.com/Lisiiii/ARPS-unity) 
 
 ## 概述
 
